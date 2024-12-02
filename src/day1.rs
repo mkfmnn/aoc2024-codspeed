@@ -46,8 +46,10 @@ impl Iterator for InputIter<'_> {
             return None;
         }
         unsafe {
-            assert!(self.input.len() > i + 13);
-            assert_eq!(*self.input.get_unchecked(i + 13), b'\n');
+            assert!(self.input.len() > i + 12);
+            if self.input.len() > i + 13 {
+                assert_eq!(*self.input.get_unchecked(i + 13), b'\n');
+            }
 
             let n1 = (*self.input.get_unchecked(i)) as i32 * 10000
                 + (*self.input.get_unchecked(i + 1)) as i32 * 1000
