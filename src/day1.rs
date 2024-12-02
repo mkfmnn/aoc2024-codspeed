@@ -43,26 +43,29 @@ impl Iterator for InputIter<'_> {
     type Item = (i32, i32);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let mut i = self.next;
+        let i = self.next;
         if i >= self.input.len() {
             return None;
         }
-        let mut n1 = 0;
-        while self.input[i] != b' ' {
-            n1 *= 10;
-            n1 += (self.input[i] - b'0') as i32;
-            i += 1;
+        unsafe {
+            assert!(self.input.len() > i + 13);
+            assert_eq!(*self.input.get_unchecked(i + 13), b'\n');
+
+            let n1 = (*self.input.get_unchecked(i)) as i32 * 10000
+                + (*self.input.get_unchecked(i + 1)) as i32 * 1000
+                + (*self.input.get_unchecked(i + 2)) as i32 * 100
+                + (*self.input.get_unchecked(i + 3)) as i32 * 10
+                + (*self.input.get_unchecked(i + 4)) as i32
+                - (b'0' as i32 * 11111);
+            let n2 = (*self.input.get_unchecked(i + 8)) as i32 * 10000
+                + (*self.input.get_unchecked(i + 9)) as i32 * 1000
+                + (*self.input.get_unchecked(i + 10)) as i32 * 100
+                + (*self.input.get_unchecked(i + 11)) as i32 * 10
+                + (*self.input.get_unchecked(i + 12)) as i32
+                - (b'0' as i32 * 11111);
+            self.next += 14;
+            Some((n1, n2))
         }
-        i += 3;
-        let mut n2 = 0;
-        while self.input[i] != b'\n' {
-            n2 *= 10;
-            n2 += (self.input[i] - b'0') as i32;
-            i += 1;
-        }
-        i += 1;
-        self.next = i;
-        Some((n1, n2))
     }
 }
 
