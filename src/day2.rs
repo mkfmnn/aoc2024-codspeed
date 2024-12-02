@@ -1,3 +1,11 @@
+pub fn parse(input: &str) -> usize {
+    let mut safe = 0;
+    for _ in input_iter(input) {
+        safe += 1;
+    }
+    safe
+}
+
 pub fn part1(input: &str) -> usize {
     let mut safe = 0;
     for levels in input_iter(input) {
@@ -102,6 +110,12 @@ impl Iterator for InputIter<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn test_parse() {
+        let input = std::fs::read_to_string("data/input2.txt").unwrap();
+        assert_eq!(1000, parse(&input));
+    }
+
     #[test]
     fn test_part1() {
         let input = std::fs::read_to_string("data/input2.txt").unwrap();

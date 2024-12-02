@@ -3,6 +3,10 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 const INPUT: &str = include_str!("../data/input2.txt");
 
+fn parse(c: &mut Criterion) {
+    c.bench_function("parse", |b| b.iter(|| day::parse(black_box(INPUT))));
+}
+
 fn part1(c: &mut Criterion) {
     c.bench_function("part1", |b| b.iter(|| day::part1(black_box(INPUT))));
 }
@@ -11,5 +15,5 @@ fn part2(c: &mut Criterion) {
     c.bench_function("part2", |b| b.iter(|| day::part2(black_box(INPUT))));
 }
 
-criterion_group!(benches, part1, part2);
+criterion_group!(benches, parse, part1, part2);
 criterion_main!(benches);
