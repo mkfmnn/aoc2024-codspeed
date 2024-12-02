@@ -9,7 +9,7 @@ pub fn parse(input: &str) -> usize {
 pub fn part1(input: &str) -> usize {
     let mut safe = 0;
     for levels in input_iter(input) {
-        if is_safe(&levels) {
+        if is_safe(levels.into_iter()) {
             safe += 1;
         }
     }
@@ -19,13 +19,13 @@ pub fn part1(input: &str) -> usize {
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
     for levels in input_iter(input) {
-        if is_safe(&levels) {
+        if is_safe(levels.iter().copied()) {
             safe += 1;
         } else {
             for i in 0..levels.len() {
                 let mut test_levels = levels.clone();
                 test_levels.remove(i);
-                if is_safe(&test_levels) {
+                if is_safe(test_levels.into_iter()) {
                     safe += 1;
                     break;
                 }
@@ -35,29 +35,22 @@ pub fn part2(input: &str) -> i32 {
     safe
 }
 
-fn is_safe(levels: &[i32]) -> bool {
-    let mut it = levels.iter().copied();
+fn is_safe(mut levels: impl Iterator<Item = i32>) -> bool {
     let mut asc_ok = true;
     let mut desc_ok = true;
-    let mut prev = it.next().unwrap();
-    while let Some(next) = it.next() {
+    let mut prev = levels.next().unwrap();
+    while let Some(next) = levels.next() {
         let d = next - prev;
-        if d > 0 {
+        if d > 0 && d <= 3 {
             if !asc_ok {
                 return false;
             }
             desc_ok = false;
-            if d > 3 {
-                return false;
-            }
-        } else if d < 0 {
+        } else if d < 0 && d >= -3 {
             if !desc_ok {
                 return false;
             }
             asc_ok = false;
-            if d < -3 {
-                return false;
-            }
         } else {
             return false;
         }
