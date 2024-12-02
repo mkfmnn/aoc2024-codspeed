@@ -1,15 +1,15 @@
-use aoc2024_codspeed::day1;
+use aoc2024_codspeed::day2 as day;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
-fn day1p1(c: &mut Criterion) {
-    let input = include_str!("../data/input1.txt");
-    c.bench_function("day1 p1", |b| b.iter(|| day1::part1(black_box(&input))));
+const INPUT: &str = include_str!("../data/input2.txt");
+
+fn part1(c: &mut Criterion) {
+    c.bench_function("part1", |b| b.iter(|| day::part1(black_box(INPUT))));
 }
 
-fn day1p2(c: &mut Criterion) {
-    let input = include_str!("../data/input1.txt");
-    c.bench_function("day1 p2", |b| b.iter(|| day1::part2(black_box(&input))));
+fn part2(c: &mut Criterion) {
+    c.bench_function("part2", |b| b.iter(|| day::part2(black_box(INPUT))));
 }
 
-criterion_group!(benches, day1p1, day1p2);
+criterion_group!(benches, part1, part2);
 criterion_main!(benches);
