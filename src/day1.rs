@@ -10,25 +10,21 @@ pub fn part1(input: &str) -> u32 {
     }
     vec1.sort_unstable();
     vec2.sort_unstable();
-    let mut total = 0;
-    for (left, right) in zip(vec1, vec2) {
-        total += left.abs_diff(right);
-    }
-    total
+    zip(vec1, vec2)
+        .map(|(left, right)| left.abs_diff(right))
+        .sum()
 }
 
 pub fn part2(input: &str) -> i32 {
     let mut vec = Vec::with_capacity(1024);
-    let mut hash = HashMap::with_capacity(1024);
+    let mut hash: HashMap<i32, i32> = HashMap::with_capacity(1024);
     for (l, r) in input_iter(input) {
         vec.push(l);
         *hash.entry(r).or_default() += 1;
     }
-    let mut score = 0;
-    for n in vec {
-        score += n * hash.get(&n).copied().unwrap_or(0);
-    }
-    score
+    vec.into_iter()
+        .map(|n| n * hash.get(&n).copied().unwrap_or_default())
+        .sum()
 }
 
 fn input_iter(input: &str) -> InputIter {
@@ -57,10 +53,7 @@ impl Iterator for InputIter<'_> {
             n1 += (self.input[i] - b'0') as i32;
             i += 1;
         }
-        i += 1;
-        while self.input[i] == b' ' {
-            i += 1;
-        }
+        i += 3;
         let mut n2 = 0;
         while self.input[i] != b'\n' {
             n2 *= 10;
