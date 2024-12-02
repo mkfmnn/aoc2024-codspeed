@@ -1,7 +1,6 @@
 pub fn part1(input: &str) -> usize {
     let mut safe = 0;
-    for line in input.lines() {
-        let levels: Vec<_> = line.split(' ').map(|s| s.parse::<i32>().unwrap()).collect();
+    for levels in input_iter(input) {
         if is_safe(&levels) {
             safe += 1;
         }
@@ -11,8 +10,7 @@ pub fn part1(input: &str) -> usize {
 
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
-    for line in input.lines() {
-        let levels: Vec<_> = line.split(' ').map(|s| s.parse::<i32>().unwrap()).collect();
+    for levels in input_iter(input) {
         if is_safe(&levels) {
             safe += 1;
         } else {
@@ -32,6 +30,47 @@ pub fn part2(input: &str) -> i32 {
 fn is_safe(levels: &[i32]) -> bool {
     let deltas: Vec<_> = levels.windows(2).map(|w| w[1] - w[0]).collect();
     deltas.iter().all(|&d| d > 0 && d <= 3) || deltas.iter().all(|&d| d < 0 && d >= -3)
+}
+
+fn input_iter(input: &str) -> InputIter {
+    InputIter {
+        input: input.as_bytes(),
+        next: 0,
+    }
+}
+
+struct InputIter<'a> {
+    input: &'a [u8],
+    next: usize,
+}
+
+impl Iterator for InputIter<'_> {
+    type Item = Vec<i32>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let mut i = self.next;
+        if i >= self.input.len() {
+            return None;
+        }
+        let mut v = Vec::with_capacity(10);
+        let mut n = 0;
+        loop {
+            if self.input[i] == b' ' {
+                v.push(n);
+                n = 0;
+            } else if self.input[i] == b'\n' {
+                v.push(n);
+                break;
+            } else {
+                n *= 10;
+                n += (self.input[i] - b'0') as i32;
+            }
+            i += 1;
+        }
+        i += 1;
+        self.next = i;
+        Some(v)
+    }
 }
 
 #[cfg(test)]
