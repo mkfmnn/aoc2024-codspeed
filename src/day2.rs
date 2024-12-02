@@ -9,7 +9,7 @@ pub fn parse(input: &str) -> usize {
 pub fn part1(input: &str) -> usize {
     let mut safe = 0;
     for levels in input_iter(input) {
-        if is_safe(levels.into_iter()) {
+        if is_safe(levels) {
             safe += 1;
         }
     }
@@ -18,7 +18,8 @@ pub fn part1(input: &str) -> usize {
 
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
-    for levels in input_iter(input) {
+    for levels_it in input_iter(input) {
+        let levels = levels_it.collect::<Vec<_>>();
         if is_safe(levels.iter().copied()) {
             safe += 1;
         } else {
@@ -59,45 +60,19 @@ fn is_safe(mut levels: impl Iterator<Item = i32>) -> bool {
     return true;
 }
 
-fn input_iter(input: &str) -> InputIter {
-    InputIter {
-        input: input.as_bytes(),
-        next: 0,
+fn fastparse(input: &[u8]) -> i32 {
+    let mut n = 0;
+    for c in input {
+        n *= 10;
+        n += (c - b'0') as i32;
     }
+    n
 }
 
-struct InputIter<'a> {
-    input: &'a [u8],
-    next: usize,
-}
-
-impl Iterator for InputIter<'_> {
-    type Item = Vec<i32>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let mut i = self.next;
-        if i >= self.input.len() {
-            return None;
-        }
-        let mut v = Vec::with_capacity(10);
-        let mut n = 0;
-        loop {
-            if self.input[i] == b' ' {
-                v.push(n);
-                n = 0;
-            } else if self.input[i] == b'\n' {
-                v.push(n);
-                break;
-            } else {
-                n *= 10;
-                n += (self.input[i] - b'0') as i32;
-            }
-            i += 1;
-        }
-        i += 1;
-        self.next = i;
-        Some(v)
-    }
+fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> + '_ {
+    input
+        .lines()
+        .map(|line| line.split(' ').map(|word| fastparse(word.as_bytes())))
 }
 
 #[cfg(test)]
