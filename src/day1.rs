@@ -1,4 +1,4 @@
-use std::{collections::HashMap, iter::zip};
+use std::iter::zip;
 
 pub fn part1(input: &str) -> u32 {
     let mut vec1 = Vec::with_capacity(1024);
@@ -17,14 +17,12 @@ pub fn part1(input: &str) -> u32 {
 
 pub fn part2(input: &str) -> i32 {
     let mut vec = Vec::with_capacity(1024);
-    let mut hash: HashMap<i32, i32> = HashMap::with_capacity(1024);
+    let mut hash: [i16; 100000] = [0; 100000];
     for (l, r) in input_iter(input) {
         vec.push(l);
-        *hash.entry(r).or_default() += 1;
+        hash[r as usize] += 1;
     }
-    vec.into_iter()
-        .map(|n| n * hash.get(&n).copied().unwrap_or_default())
-        .sum()
+    vec.into_iter().map(|n| n * hash[n as usize] as i32).sum()
 }
 
 fn input_iter(input: &str) -> InputIter {
