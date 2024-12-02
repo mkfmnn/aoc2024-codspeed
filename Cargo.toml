@@ -3,4 +3,9 @@ name = "aoc2024-codspeed"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "advent2024"
+harness = false
