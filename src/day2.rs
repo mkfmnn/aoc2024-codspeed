@@ -28,8 +28,34 @@ pub fn part2(input: &str) -> i32 {
 }
 
 fn is_safe(levels: &[i32]) -> bool {
-    let deltas: Vec<_> = levels.windows(2).map(|w| w[1] - w[0]).collect();
-    deltas.iter().all(|&d| d > 0 && d <= 3) || deltas.iter().all(|&d| d < 0 && d >= -3)
+    let mut it = levels.iter().copied();
+    let mut asc_ok = true;
+    let mut desc_ok = true;
+    let mut prev = it.next().unwrap();
+    while let Some(next) = it.next() {
+        let d = next - prev;
+        if d > 0 {
+            if !asc_ok {
+                return false;
+            }
+            desc_ok = false;
+            if d > 3 {
+                return false;
+            }
+        } else if d < 0 {
+            if !desc_ok {
+                return false;
+            }
+            asc_ok = false;
+            if d < -3 {
+                return false;
+            }
+        } else {
+            return false;
+        }
+        prev = next;
+    }
+    return true;
 }
 
 fn input_iter(input: &str) -> InputIter {
