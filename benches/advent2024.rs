@@ -1,25 +1,23 @@
-use aoc2024_codspeed::day2 as day;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
-const INPUT: &str = include_str!("../data/input2.txt");
+use aoc2024_codspeed::*;
+use criterion::{criterion_group, criterion_main, Criterion};
 
-fn parse_lines(c: &mut Criterion) {
-    c.bench_function("parse lines", |b| {
-        b.iter(|| day::parse_lines(black_box(INPUT)))
-    });
+fn day1(c: &mut Criterion) {
+    let input = include_str!("../data/input1.txt");
+    let mut group = c.benchmark_group("day1");
+    group.bench_function("part1", |b| b.iter(|| day1::part1(black_box(&input))));
+    group.bench_function("part2", |b| b.iter(|| day1::part2(black_box(&input))));
+    group.finish();
 }
 
-fn parse_all(c: &mut Criterion) {
-    c.bench_function("parse all", |b| b.iter(|| day::parse_all(black_box(INPUT))));
+fn day2(c: &mut Criterion) {
+    let input = include_str!("../data/input2.txt");
+    let mut group = c.benchmark_group("day2");
+    group.bench_function("part1", |b| b.iter(|| day2::part1(black_box(&input))));
+    group.bench_function("part2", |b| b.iter(|| day2::part2(black_box(&input))));
+    group.finish();
 }
 
-fn part1(c: &mut Criterion) {
-    c.bench_function("day2 part1", |b| b.iter(|| day::part1(black_box(INPUT))));
-}
-
-fn part2(c: &mut Criterion) {
-    c.bench_function("day2 part2", |b| b.iter(|| day::part2(black_box(INPUT))));
-}
-
-criterion_group!(benches, parse_lines, parse_all, part1, part2);
+criterion_group!(benches, day1, day2);
 criterion_main!(benches);
