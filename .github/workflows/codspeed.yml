@@ -23,6 +23,12 @@ jobs:
           cache-target: release
           bins: cargo-codspeed
 
+      - name: Get input data
+        run: |
+          mkdir -p data
+          curl -b "session=${{ secrets.DATA_URL }}" https://adventofcode.com/2024/day/1/input -O data/input1.txt
+          curl -b "session=${{ secrets.DATA_URL }}" https://adventofcode.com/2024/day/2/input -O data/input2.txt
+
       - name: Build the benchmark target(s)
         run: cargo codspeed build
 
