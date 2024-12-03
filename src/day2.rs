@@ -103,26 +103,70 @@ fn is_safe_dampened<const MIN: i32, const MAX: i32>(deltas: &[i32]) -> bool {
     return true;
 }
 
-fn fastparse(input: &[u8]) -> i32 {
-    if input.len() == 2 {
-        input[0] as i32 * 10 + input[1] as i32 - b'0' as i32 * 11
-    } else if input.len() == 1 {
-        input[0] as i32 - b'0' as i32
-    } else {
-        let mut n = 0;
-        for c in input {
-            n *= 10;
-            n += (c - b'0') as i32;
+pub struct IterInts<'a> {
+    line: &'a [u8],
+}
+
+impl<'a> IterInts<'a> {
+    fn parse(line: &[u8]) -> IterInts {
+        IterInts { line: line }
+    }
+}
+
+impl<'a> Iterator for IterInts<'a> {
+    type Item = i32;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        unsafe {
+            if self.line.len() > 2 {
+                if *self.line.get_unchecked(2) == b' ' {
+                    let result = *self.line.get_unchecked(0) as i32 * 10
+                        + *self.line.get_unchecked(1) as i32
+                        - b'0' as i32 * 11;
+                    self.line = self.line.get_unchecked(3..);
+                    return Some(result);
+                } else if *self.line.get_unchecked(1) == b' ' {
+                    let result = *self.line.get_unchecked(0) as i32 - b'0' as i32;
+                    self.line = self.line.get_unchecked(2..);
+                    return Some(result);
+                }
+            }
+            if self.line.len() == 2 {
+                let result = *self.line.get_unchecked(0) as i32 * 10
+                    + *self.line.get_unchecked(1) as i32
+                    - b'0' as i32 * 11;
+                self.line = &[];
+                return Some(result);
+            } else if self.line.len() == 1 {
+                let result = *self.line.get_unchecked(0) as i32 - b'0' as i32;
+                self.line = &[];
+                return Some(result);
+            }
         }
-        n
+        if self.line.len() == 0 {
+            None
+        } else {
+            // Fallback parser--shouldn't normally get used
+            let mut n = 0;
+            let mut i = 0;
+            while i < self.line.len() {
+                if self.line[i] == b' ' {
+                    i += 1;
+                    break;
+                }
+                n *= 10;
+                n += (self.line[i] - b'0') as i32;
+                i += 1;
+            }
+            self.line = &self.line[i..];
+            Some(n)
+        }
     }
 }
 
 fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> {
     let bytes = input.trim_end_matches('\n').as_bytes();
-    bytes
-        .split(|&b| b == b'\n')
-        .map(|l| l.split(|&b| b == b' ').map(fastparse))
+    bytes.split(|&b| b == b'\n').map(IterInts::parse)
 }
 
 #[cfg(test)]
