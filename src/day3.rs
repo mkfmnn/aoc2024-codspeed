@@ -9,13 +9,11 @@ pub fn part1(input: &str) -> i64 {
         let Some(location) = memchr(b'u', haystack) else {
             break;
         };
-        if let Some(token) = haystack.get(location - 1..location + 3) {
-            if token == b"mul(" {
-                if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
-                    sum += l * r;
-                    haystack = &haystack[location + 3 + len..];
-                    continue;
-                }
+        if haystack.get(location - 1..location + 3) == Some(b"mul(") {
+            if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
+                sum += l * r;
+                haystack = &haystack[location + 3 + len..];
+                continue;
             }
         }
         haystack = &haystack[location + 1..];
@@ -33,13 +31,11 @@ pub fn part2(input: &str) -> i64 {
         };
         if haystack[location] == b'u' {
             if enabled {
-                if let Some(token) = haystack.get(location - 1..location + 3) {
-                    if token == b"mul(" {
-                        if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
-                            sum += l * r;
-                            haystack = &haystack[location + 3 + len..];
-                            continue;
-                        }
+                if haystack.get(location - 1..location + 3) == Some(b"mul(") {
+                    if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
+                        sum += l * r;
+                        haystack = &haystack[location + 3 + len..];
+                        continue;
                     }
                 }
             }
