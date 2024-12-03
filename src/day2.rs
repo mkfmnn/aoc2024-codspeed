@@ -18,19 +18,15 @@ pub fn part1(input: &str) -> usize {
 
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
-    for levels_it in input_iter(input) {
-        let levels = levels_it.collect::<Vec<_>>();
-        if is_safe(levels.iter().copied()) {
+    for mut levels_it in input_iter(input) {
+        let mut deltas = Vec::with_capacity(10);
+        let mut prev = levels_it.next().unwrap();
+        while let Some(curr) = levels_it.next() {
+            deltas.push(curr - prev);
+            prev = curr;
+        }
+        if is_safe_dampened::<1, 3>(&deltas) || is_safe_dampened::<-3, -1>(&deltas) {
             safe += 1;
-        } else {
-            for i in 0..levels.len() {
-                let mut test_levels = levels.clone();
-                test_levels.remove(i);
-                if is_safe(test_levels.into_iter()) {
-                    safe += 1;
-                    break;
-                }
-            }
         }
     }
     safe
@@ -60,6 +56,44 @@ fn is_safe(mut levels: impl Iterator<Item = i32>) -> bool {
     return true;
 }
 
+fn is_safe_dampened<const MIN: i32, const MAX: i32>(deltas: &[i32]) -> bool {
+    let mut dampened = false;
+    let mut i = 0;
+    while i < deltas.len() {
+        let this = deltas[i];
+        if this < MIN || this > MAX {
+            if dampened {
+                return false;
+            }
+            if i + 1 == deltas.len() {
+                return true;
+            }
+            let next = deltas[i + 1];
+            let merged = this + next;
+            if merged >= MIN && merged <= MAX {
+                dampened = true;
+                i += 1;
+            } else if next < MIN || next > MAX {
+                return false;
+            } else {
+                if i == 0 {
+                    dampened = true;
+                } else {
+                    let prev = deltas[i - 1];
+                    let merged = this + prev;
+                    if merged >= MIN && merged <= MAX {
+                        dampened = true;
+                    } else {
+                        return false;
+                    }
+                }
+            }
+        }
+        i += 1;
+    }
+    return true;
+}
+
 fn fastparse(input: &[u8]) -> i32 {
     if input.len() == 2 {
         input[0] as i32 * 10 + input[1] as i32 - b'0' as i32 * 11
@@ -75,7 +109,7 @@ fn fastparse(input: &[u8]) -> i32 {
     }
 }
 
-fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> + '_ {
+fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> {
     let bytes = input.trim_end_matches('\n').as_bytes();
     bytes
         .split(|&b| b == b'\n')
