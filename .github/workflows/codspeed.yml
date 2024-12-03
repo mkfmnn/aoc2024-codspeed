@@ -23,11 +23,21 @@ jobs:
           cache-target: release
           bins: cargo-codspeed
 
-      - name: Get input data
+      - name: Cache input data
+        id: cache-input
+        uses: actions/cache@v3
+        with:
+          # npm cache files are stored in `~/.npm` on Linux/macOS
+          path: data
+          key: input-day3
+
+      - if: ${{ steps.cache-input.outputs.cache-hit != 'true' }}
+        name: Get input data
         run: |
           mkdir -p data
           curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/1/input -o data/input1.txt
           curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/2/input -o data/input2.txt
+          curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/3/input -o data/input3.txt
 
       - name: Build the benchmark target(s)
         run: cargo codspeed build
