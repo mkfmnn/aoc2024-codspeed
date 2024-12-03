@@ -1,9 +1,19 @@
-pub fn parse(input: &str) -> usize {
+pub fn parse_lines(input: &str) -> usize {
     let mut safe = 0;
     for _ in input_iter(input) {
         safe += 1;
     }
     safe
+}
+
+pub fn parse_all(input: &str) -> usize {
+    let mut total = 0;
+    for levels in input_iter(input) {
+        for i in levels {
+            total += i;
+        }
+    }
+    total as usize
 }
 
 pub fn part1(input: &str) -> usize {
@@ -121,7 +131,7 @@ mod tests {
     #[test]
     fn test_parse() {
         let input = std::fs::read_to_string("data/input2.txt").unwrap();
-        assert_eq!(1000, parse(&input));
+        assert_eq!(324651, parse_all(&input));
     }
 
     #[test]
