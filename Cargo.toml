@@ -9,3 +9,6 @@ criterion = "0.5.1"
 [[bench]]
 name = "advent2024"
 harness = false
+
+[dependencies]
+memchr = "2.7.4"

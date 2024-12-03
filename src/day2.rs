@@ -1,3 +1,5 @@
+use memchr::memchr;
+
 pub fn parse_lines(input: &str) -> usize {
     let mut safe = 0;
     for _ in input_iter(input) {
@@ -103,6 +105,38 @@ fn is_safe_dampened<const MIN: i32, const MAX: i32>(deltas: &[i32]) -> bool {
     return true;
 }
 
+pub struct IterLines<'a> {
+    input: &'a [u8],
+}
+
+impl<'a> IterLines<'a> {
+    fn new(input: &[u8]) -> IterLines {
+        IterLines { input }
+    }
+}
+
+impl<'a> Iterator for IterLines<'a> {
+    type Item = &'a [u8];
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.input.is_empty() {
+            return None;
+        }
+        match memchr(b'\n', self.input) {
+            Some(idx) => {
+                let ret = &self.input[..idx];
+                self.input = &self.input[idx + 1..];
+                Some(ret)
+            }
+            None => {
+                let ret = self.input;
+                self.input = &[];
+                Some(ret)
+            }
+        }
+    }
+}
+
 pub struct IterInts<'a> {
     line: &'a [u8],
 }
@@ -165,8 +199,7 @@ impl<'a> Iterator for IterInts<'a> {
 }
 
 fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> {
-    let bytes = input.trim_end_matches('\n').as_bytes();
-    bytes.split(|&b| b == b'\n').map(IterInts::parse)
+    IterLines::new(input.as_bytes()).map(IterInts::parse)
 }
 
 #[cfg(test)]
