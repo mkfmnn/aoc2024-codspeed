@@ -61,18 +61,25 @@ fn is_safe(mut levels: impl Iterator<Item = i32>) -> bool {
 }
 
 fn fastparse(input: &[u8]) -> i32 {
-    let mut n = 0;
-    for c in input {
-        n *= 10;
-        n += (c - b'0') as i32;
+    if input.len() == 2 {
+        input[0] as i32 * 10 + input[1] as i32 - b'0' as i32 * 11
+    } else if input.len() == 1 {
+        input[0] as i32 - b'0' as i32
+    } else {
+        let mut n = 0;
+        for c in input {
+            n *= 10;
+            n += (c - b'0') as i32;
+        }
+        n
     }
-    n
 }
 
 fn input_iter(input: &str) -> impl Iterator<Item = impl Iterator<Item = i32> + '_> + '_ {
-    input
-        .lines()
-        .map(|line| line.split(' ').map(|word| fastparse(word.as_bytes())))
+    let bytes = input.trim_end_matches('\n').as_bytes();
+    bytes
+        .split(|&b| b == b'\n')
+        .map(|l| l.split(|&b| b == b' ').map(fastparse))
 }
 
 #[cfg(test)]
