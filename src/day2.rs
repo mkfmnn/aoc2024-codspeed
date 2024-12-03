@@ -18,8 +18,9 @@ pub fn part1(input: &str) -> usize {
 
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
+    let mut deltas = Vec::<i32>::with_capacity(10);
     for mut levels_it in input_iter(input) {
-        let mut deltas = Vec::with_capacity(10);
+        deltas.clear();
         let mut prev = levels_it.next().unwrap();
         while let Some(curr) = levels_it.next() {
             deltas.push(curr - prev);
@@ -33,22 +34,20 @@ pub fn part2(input: &str) -> i32 {
 }
 
 fn is_safe(mut levels: impl Iterator<Item = i32>) -> bool {
-    let mut asc_ok = true;
-    let mut desc_ok = true;
-    let mut prev = levels.next().unwrap();
+    let first = levels.next().unwrap();
+    let Some(mut prev) = levels.next() else {
+        return true;
+    };
+    let d = prev - first;
+    let signum = d.signum();
+    let abs = d.abs();
+    if signum == 0 || abs < 1 || abs > 3 {
+        return false;
+    }
     while let Some(next) = levels.next() {
         let d = next - prev;
-        if d > 0 && d <= 3 {
-            if !asc_ok {
-                return false;
-            }
-            desc_ok = false;
-        } else if d < 0 && d >= -3 {
-            if !desc_ok {
-                return false;
-            }
-            asc_ok = false;
-        } else {
+        let abs = d.abs();
+        if d.signum() != signum || abs < 1 || abs > 3 {
             return false;
         }
         prev = next;
