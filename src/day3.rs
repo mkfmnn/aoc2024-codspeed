@@ -56,8 +56,24 @@ pub fn part2(input: &str) -> i64 {
     sum
 }
 
-pub fn parse_mul_args(slice: &[u8]) -> Option<(i64, i64, usize)> {
-    if slice.len() < 4 {
+fn parse_mul_args(slice: &[u8]) -> Option<(i64, i64, usize)> {
+    // common case first: "###,###)"
+    if slice.len() >= 8 && slice[7] == b')' {
+        if slice[0].is_ascii_digit()
+            && slice[1].is_ascii_digit()
+            && slice[2].is_ascii_digit()
+            && slice[3] == b','
+            && slice[4].is_ascii_digit()
+            && slice[5].is_ascii_digit()
+            && slice[6].is_ascii_digit()
+        {
+            return Some((
+                slice[0] as i64 * 100 + slice[1] as i64 * 10 + slice[2] as i64 - b'0' as i64 * 111,
+                slice[4] as i64 * 100 + slice[5] as i64 * 10 + slice[6] as i64 - b'0' as i64 * 111,
+                8,
+            ));
+        }
+    } else if slice.len() < 4 {
         return None;
     }
     let mut n1 = slice[0] as i64 - b'0' as i64;
