@@ -105,7 +105,7 @@ fn is_safe_dampened<const MIN: i32, const MAX: i32>(deltas: &[i32]) -> bool {
     return true;
 }
 
-pub struct IterLines<'a> {
+struct IterLines<'a> {
     input: &'a [u8],
 }
 
@@ -137,7 +137,7 @@ impl<'a> Iterator for IterLines<'a> {
     }
 }
 
-pub struct IterInts<'a> {
+struct IterInts<'a> {
     line: &'a [u8],
 }
 
