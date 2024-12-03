@@ -3,6 +3,9 @@ name = "aoc2024-codspeed"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+bench = false
+
 [dev-dependencies]
 criterion = "0.5.1"
 

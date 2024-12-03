@@ -31,10 +31,10 @@ pub fn part1(input: &str) -> usize {
 pub fn part2(input: &str) -> i32 {
     let mut safe = 0;
     let mut deltas = Vec::<i32>::with_capacity(10);
-    for mut levels_it in input_iter(input) {
+    for mut levels in input_iter(input) {
         deltas.clear();
-        let mut prev = levels_it.next().unwrap();
-        while let Some(curr) = levels_it.next() {
+        let mut prev = levels.next().unwrap();
+        while let Some(curr) = levels.next() {
             deltas.push(curr - prev);
             prev = curr;
         }
@@ -174,7 +174,7 @@ impl<'a> Iterator for IterInts<'a> {
         if self.line.len() == 0 {
             None
         } else {
-            // Fallback parser--shouldn't normally get used
+            // Fallback parser--shouldn't normally get used but is here in case the input has any 3+ digit ints
             let mut n = 0;
             let mut i = 0;
             while i < self.line.len() {
@@ -203,6 +203,12 @@ mod tests {
     fn test_parse() {
         let input = std::fs::read_to_string("data/input2.txt").unwrap();
         assert_eq!(324651, parse_all(&input));
+    }
+
+    #[test]
+    fn test_weird() {
+        let input = "1 123 8\n9 22";
+        assert_eq!(163, parse_all(&input));
     }
 
     #[test]
