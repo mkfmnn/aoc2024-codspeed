@@ -1,54 +1,107 @@
 use core::str;
-use std::sync::LazyLock;
 
-use regex::bytes::Regex;
-
-static RE_1: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"mul\(([0-9]+),([0-9]+)\)").unwrap());
-
-static RE_2: LazyLock<Regex> =
-    LazyLock::new(|| Regex::new(r"(do\(\))|(don't\(\))|mul\(([0-9]+),([0-9]+)\)").unwrap());
+use memchr::{memchr, memchr2};
 
 pub fn part1(input: &str) -> i64 {
-    RE_1.captures_iter(input.as_bytes())
-        .map(|c| {
-            let [l, r] = c.extract().1;
-            fastparse(l) * fastparse(r)
-        })
-        .sum()
+    let mut haystack = input.as_bytes();
+    let mut sum = 0;
+    while !haystack.is_empty() {
+        let Some(location) = memchr(b'u', haystack) else {
+            break;
+        };
+        if let Some(token) = haystack.get(location - 1..location + 3) {
+            if token == b"mul(" {
+                if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
+                    sum += l * r;
+                    haystack = &haystack[location + 3 + len..];
+                    continue;
+                }
+            }
+        }
+        haystack = &haystack[location + 1..];
+    }
+    sum
 }
 
 pub fn part2(input: &str) -> i64 {
+    let mut haystack = input.as_bytes();
     let mut enabled = true;
     let mut sum = 0;
-    for capture in RE_2.captures_iter(input.as_bytes()) {
-        if capture.get(1).is_some() {
-            enabled = true;
-        } else if capture.get(2).is_some() {
-            enabled = false;
-        } else if enabled {
-            let l = fastparse(capture.get(3).unwrap().as_bytes());
-            let r = fastparse(capture.get(4).unwrap().as_bytes());
-            sum += l * r;
+    while !haystack.is_empty() {
+        let Some(location) = memchr2(b'u', b'd', haystack) else {
+            break;
+        };
+        if haystack[location] == b'u' {
+            if enabled {
+                if let Some(token) = haystack.get(location - 1..location + 3) {
+                    if token == b"mul(" {
+                        if let Some((l, r, len)) = parse_mul_args(&haystack[location + 3..]) {
+                            sum += l * r;
+                            haystack = &haystack[location + 3 + len..];
+                            continue;
+                        }
+                    }
+                }
+            }
+            haystack = &haystack[location + 1..];
+        } else if haystack[location] == b'd' {
+            haystack = &haystack[location + 1..];
+            if haystack.starts_with(b"o()") {
+                enabled = true;
+                haystack = &haystack[3..];
+            } else if haystack.starts_with(b"on't()") {
+                enabled = false;
+                haystack = &haystack[5..];
+            }
+        } else {
+            unreachable!();
         }
     }
     sum
 }
 
-fn fastparse(slice: &[u8]) -> i64 {
-    if slice.len() == 3 {
-        slice[0] as i64 * 100 + slice[1] as i64 * 10 + slice[2] as i64 - b'0' as i64 * 111
-    } else if slice.len() == 2 {
-        slice[0] as i64 * 10 + slice[1] as i64 - b'0' as i64 * 11
-    } else if slice.len() == 1 {
-        slice[0] as i64 - b'0' as i64
-    } else {
-        str::from_utf8(slice).unwrap().parse::<i64>().unwrap()
+pub fn parse_mul_args(slice: &[u8]) -> Option<(i64, i64, usize)> {
+    if slice.len() < 4 {
+        return None;
     }
+    let mut n1 = slice[0] as i64 - b'0' as i64;
+    if n1 < 0 || n1 >= 10 {
+        return None;
+    }
+    let mut i = 1;
+    while i < slice.len() && slice[i].is_ascii_digit() {
+        n1 *= 10;
+        n1 += slice[i] as i64 - b'0' as i64;
+        i += 1;
+    }
+    if slice.len() - i < 3 || slice[i] != b',' {
+        return None;
+    }
+    let mut n2 = slice[i + 1] as i64 - b'0' as i64;
+    if n2 < 0 || n2 >= 10 {
+        return None;
+    }
+    i += 2;
+    while i < slice.len() && slice[i].is_ascii_digit() {
+        n2 *= 10;
+        n2 += slice[i] as i64 - b'0' as i64;
+        i += 1;
+    }
+    if slice.get(i) != Some(&b')') {
+        return None;
+    }
+    Some((n1, n2, i + 1))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_parse1() {
+        assert_eq!(Some((1, 2, 4)), parse_mul_args(b"1,2)"));
+        assert_eq!(Some((100, 999, 8)), parse_mul_args(b"100,999)"));
+    }
 
     #[test]
     fn test_part1() {
