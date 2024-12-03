@@ -15,3 +15,4 @@ harness = false
 
 [dependencies]
 memchr = "2.7.4"
+regex = "1.11.1"
