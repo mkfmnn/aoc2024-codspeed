@@ -151,31 +151,25 @@ impl<'a> Iterator for IterInts<'a> {
     type Item = i32;
 
     fn next(&mut self) -> Option<Self::Item> {
-        unsafe {
-            if self.line.len() > 2 {
-                if *self.line.get_unchecked(2) == b' ' {
-                    let result = *self.line.get_unchecked(0) as i32 * 10
-                        + *self.line.get_unchecked(1) as i32
-                        - b'0' as i32 * 11;
-                    self.line = self.line.get_unchecked(3..);
-                    return Some(result);
-                } else if *self.line.get_unchecked(1) == b' ' {
-                    let result = *self.line.get_unchecked(0) as i32 - b'0' as i32;
-                    self.line = self.line.get_unchecked(2..);
-                    return Some(result);
-                }
-            }
-            if self.line.len() == 2 {
-                let result = *self.line.get_unchecked(0) as i32 * 10
-                    + *self.line.get_unchecked(1) as i32
-                    - b'0' as i32 * 11;
-                self.line = &[];
+        if self.line.len() > 2 {
+            if self.line[2] == b' ' {
+                let result = self.line[0] as i32 * 10 + self.line[1] as i32 - b'0' as i32 * 11;
+                self.line = &self.line[3..];
                 return Some(result);
-            } else if self.line.len() == 1 {
-                let result = *self.line.get_unchecked(0) as i32 - b'0' as i32;
-                self.line = &[];
+            } else if self.line[1] == b' ' {
+                let result = self.line[0] as i32 - b'0' as i32;
+                self.line = &self.line[2..];
                 return Some(result);
             }
+        }
+        if self.line.len() == 2 {
+            let result = self.line[0] as i32 * 10 + self.line[1] as i32 - b'0' as i32 * 11;
+            self.line = &[];
+            return Some(result);
+        } else if self.line.len() == 1 {
+            let result = self.line[0] as i32 - b'0' as i32;
+            self.line = &[];
+            return Some(result);
         }
         if self.line.len() == 0 {
             None
