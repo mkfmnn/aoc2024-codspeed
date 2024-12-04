@@ -1,3 +1,5 @@
+use std::hint::black_box;
+
 const DIM: usize = 140;
 
 pub fn part1(input: &str) -> u32 {
@@ -46,6 +48,42 @@ pub fn part1(input: &str) -> u32 {
     }
 
     visitor.count
+}
+
+pub fn part1a(input: &str) -> u32 {
+    let matrix = Matrix(input.as_bytes());
+    let mut visitor = Visitor {
+        state: VisitorState::N,
+        count: 0,
+    };
+    for y in 0..DIM {
+        for x in 0..DIM {
+            visitor.visit(matrix.get(x, y));
+        }
+        visitor.finish();
+    }
+    visitor.count
+}
+
+pub fn part1b(input: &str) -> usize {
+    input.matches("XMAS").count() + input.matches("SAMX").count()
+}
+
+pub fn test3(input: &str) -> usize {
+    let mut buf = [b'\n'; (DIM+1) * (DIM+6)];
+    buf[(DIM+1) * 3..(DIM+1)*143].copy_from_slice(input.as_bytes());
+    black_box(&buf);
+    0
+}
+
+pub fn test4(input: &str) -> usize {
+    assert_eq!(input.as_bytes().len(), (DIM+1)*DIM);
+    let mut v = Vec::<u8>::with_capacity((DIM+1) * (DIM+6));
+    v.extend(&[b'\n'; (DIM+1)*3]);
+    v.extend(input.as_bytes());
+    v.extend(&[b'\n'; (DIM+1)*3]);
+    black_box(&v);
+    0
 }
 
 struct Matrix<'a>(&'a [u8]);
@@ -106,6 +144,12 @@ pub fn part2(_input: &str) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_part1partial() {
+        let input = std::fs::read_to_string("data/input4.txt").unwrap();
+        assert_eq!(part1a(&input) as usize, part1b(&input));
+    }
 
     #[test]
     fn test_part1() {
