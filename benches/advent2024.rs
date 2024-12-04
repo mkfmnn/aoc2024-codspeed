@@ -27,5 +27,13 @@ fn day3(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, day1, day2, day3);
+fn day4(c: &mut Criterion) {
+    let input = include_str!("../data/input4.txt");
+    let mut group = c.benchmark_group("day4");
+    group.bench_function("day4 part1", |b| b.iter(|| day4::part1(black_box(&input))));
+    group.bench_function("day4 part2", |b| b.iter(|| day4::part2(black_box(&input))));
+    group.finish();
+}
+
+criterion_group!(benches, day1, day2, day3, day4);
 criterion_main!(benches);
