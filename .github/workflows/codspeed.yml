@@ -15,6 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RUSTFLAGS: '-C target-cpu=native'
+      DAY: 4
     steps:
       - uses: actions/checkout@v4
 
@@ -31,15 +32,15 @@ jobs:
         with:
           # npm cache files are stored in `~/.npm` on Linux/macOS
           path: data
-          key: input-day3
+          key: input-day${{ env.DAY }}
 
       - if: ${{ steps.cache-input.outputs.cache-hit != 'true' }}
         name: Get input data
         run: |
           mkdir -p data
-          curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/1/input -o data/input1.txt
-          curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/2/input -o data/input2.txt
-          curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/3/input -o data/input3.txt
+          for ((i = 1 ; i <= ${{ env.DAY }} ; i++ )); do
+            curl -b "session=${{ secrets.AOC_TOKEN }}" https://adventofcode.com/2024/day/$i/input -o data/input$i.txt
+          done
 
       - name: Build the benchmark target(s)
         run: cargo codspeed build
