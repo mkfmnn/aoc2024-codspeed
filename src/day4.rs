@@ -48,6 +48,15 @@ pub fn part1(input: &str) -> u32 {
     visitor.count
 }
 
+struct Matrix<'a>(&'a [u8]);
+
+impl Matrix<'_> {
+    // #[inline(always)]
+    fn get(&self, x: usize, y: usize) -> u8 {
+        self.0[y * (DIM + 1) + x]
+    }
+}
+
 enum VisitorState {
     N,
     F1,
@@ -56,15 +65,6 @@ enum VisitorState {
     R1,
     R2,
     R3,
-}
-
-struct Matrix<'a>(&'a [u8]);
-
-impl Matrix<'_> {
-    // #[inline(always)]
-    fn get(&self, x: usize, y: usize) -> u8 {
-        self.0[y * (DIM + 1) + x]
-    }
 }
 
 struct Visitor {
@@ -100,7 +100,7 @@ impl Visitor {
 }
 
 pub fn part2(_input: &str) -> u32 {
-    todo!();
+    0
 }
 
 #[cfg(test)]
