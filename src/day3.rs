@@ -3,11 +3,6 @@ use core::str;
 use memchr::{memchr, memchr2};
 
 pub fn part1(input: &str) -> i64 {
-    unsafe { part1_inner(input) }
-}
-
-#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn part1_inner(input: &str) -> i64 {
     let mut haystack = input.as_bytes();
     let mut sum = 0;
     while !haystack.is_empty() {
@@ -27,11 +22,6 @@ unsafe fn part1_inner(input: &str) -> i64 {
 }
 
 pub fn part2(input: &str) -> i64 {
-    unsafe { part2_inner(input) }
-}
-
-#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn part2_inner(input: &str) -> i64 {
     let mut haystack = input.as_bytes();
     let mut enabled = true;
     let mut sum = 0;
@@ -66,8 +56,7 @@ unsafe fn part2_inner(input: &str) -> i64 {
     sum
 }
 
-#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn parse_mul_args(slice: &[u8]) -> Option<(i64, i64, usize)> {
+fn parse_mul_args(slice: &[u8]) -> Option<(i64, i64, usize)> {
     // common case first: "###,###)"
     if slice.len() >= 8 && slice[7] == b')' {
         if slice[0].is_ascii_digit()
@@ -122,10 +111,8 @@ mod tests {
 
     #[test]
     fn test_parse1() {
-        unsafe {
-            assert_eq!(Some((1, 2, 4)), parse_mul_args(b"1,2)"));
-            assert_eq!(Some((100, 999, 8)), parse_mul_args(b"100,999)"));
-        }
+        assert_eq!(Some((1, 2, 4)), parse_mul_args(b"1,2)"));
+        assert_eq!(Some((100, 999, 8)), parse_mul_args(b"100,999)"));
     }
 
     #[test]
