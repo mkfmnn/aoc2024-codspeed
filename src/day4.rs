@@ -1,5 +1,7 @@
 use std::hint::black_box;
 
+use memchr::memchr;
+
 const DIM: usize = 140;
 
 pub fn part1(input: &str) -> u32 {
@@ -70,20 +72,20 @@ pub fn part1b(input: &str) -> usize {
 }
 
 pub fn test3(input: &str) -> usize {
-    let mut buf = [b'\n'; (DIM+1) * (DIM+6)];
-    buf[(DIM+1) * 3..(DIM+1)*143].copy_from_slice(input.as_bytes());
+    const LEN: usize = (DIM + 1) * DIM;
+    let buf = {
+        let buf: [std::mem::MaybeUninit<u8>; LEN] =
+            [const { std::mem::MaybeUninit::uninit() }; LEN];
+        let mut buf2 = unsafe { std::mem::transmute::<_, [u8; LEN]>(buf) };
+        buf2.copy_from_slice(input.as_bytes());
+        buf2
+    };
     black_box(&buf);
     0
 }
 
 pub fn test4(input: &str) -> usize {
-    assert_eq!(input.as_bytes().len(), (DIM+1)*DIM);
-    let mut v = Vec::<u8>::with_capacity((DIM+1) * (DIM+6));
-    v.extend(&[b'\n'; (DIM+1)*3]);
-    v.extend(input.as_bytes());
-    v.extend(&[b'\n'; (DIM+1)*3]);
-    black_box(&v);
-    0
+    memchr(b'Z', input.as_bytes()).unwrap_or_default()
 }
 
 struct Matrix<'a>(&'a [u8]);
