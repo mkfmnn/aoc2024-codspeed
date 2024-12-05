@@ -49,7 +49,11 @@ fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    let bytes = input.as_bytes();
+    unsafe { part2_inner(input.as_bytes()) }
+}
+
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn part2_inner(bytes: &[u8]) -> usize {
     let mut sum = 0;
     for y in 1..DIM - 1 {
         let off = y * (DIM + 1);
