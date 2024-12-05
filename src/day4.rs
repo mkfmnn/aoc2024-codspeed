@@ -76,6 +76,10 @@ struct Visitor {
 
 impl Visitor {
     fn visit(&mut self, c: u8) {
+        if c == b'X' {
+            self.count += 1;
+        }
+        /*
         use VisitorState::*;
         self.state = match (&self.state, c) {
             (F1, b'M') => F2,
@@ -94,6 +98,7 @@ impl Visitor {
             (_, b'S') => R1,
             _ => N,
         }
+        */
     }
 
     fn finish(&mut self) {
