@@ -146,7 +146,7 @@ impl Dir {
 }
 */
 
-fn step(d: u8) -> isize {
+const fn step(d: u8) -> isize {
     const IDIM: isize = DIM as isize;
     match d {
         0 => 1,
@@ -185,30 +185,36 @@ pub fn test2(input: &str) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    const LEN: usize = DIM * (DIM + 1);
     let bytes = input.as_bytes();
-    assert_eq!(LEN, bytes.len());
+    assert_eq!(DIM * (DIM + 1), bytes.len());
     let mut sum = 0;
-    for i in 0..(bytes.len() as isize) {
-        if bytes[i as usize] == b'S' {
-            for d in 0..8 {
-                let step = step(d);
-                let max_step = i + step * 3;
-                if !(0..(LEN as isize)).contains(&max_step) {
-                    continue;
-                }
-                unsafe {
-                    if (*bytes.get_unchecked((i + step) as usize) == b'A')
-                        && (*bytes.get_unchecked((i + step * 2) as usize) == b'M')
-                        && (*bytes.get_unchecked((max_step) as usize) == b'X')
-                    {
-                        sum += 1;
-                    }
-                }
-            }
+    for i in 0..bytes.len() {
+        if bytes[i] == b'X' {
+            sum += check_dir::<0>(bytes, i)
+                + check_dir::<1>(bytes, i)
+                + check_dir::<2>(bytes, i)
+                + check_dir::<3>(bytes, i)
+                + check_dir::<4>(bytes, i)
+                + check_dir::<5>(bytes, i)
+                + check_dir::<6>(bytes, i)
+                + check_dir::<7>(bytes, i);
         }
     }
     sum
+}
+
+fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
+    let step = step(D) as usize;
+    unsafe {
+        if bytes.get(i.overflowing_add(step.overflowing_mul(3).0).0) == Some(&b'S')
+        && *bytes.get_unchecked(i.overflowing_add(step.overflowing_mul(2).0).0) == b'A'
+        && *bytes.get_unchecked(i.overflowing_add(step).0) == b'M'
+        {
+            1
+        } else {
+            0
+        }
+    }
 }
 
 #[cfg(test)]
