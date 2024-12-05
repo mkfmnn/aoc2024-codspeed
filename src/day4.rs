@@ -1,10 +1,8 @@
-use std::hint::black_box;
-
 use memchr::memchr;
 
 const DIM: usize = 140;
 
-pub fn part1(input: &str) -> u32 {
+pub fn part1(input: &str) -> usize {
     let matrix = Matrix(input.as_bytes());
     let mut visitor = Visitor {
         state: VisitorState::N,
@@ -52,42 +50,6 @@ pub fn part1(input: &str) -> u32 {
     visitor.count
 }
 
-pub fn part1a(input: &str) -> u32 {
-    let matrix = Matrix(input.as_bytes());
-    let mut visitor = Visitor {
-        state: VisitorState::N,
-        count: 0,
-    };
-    for y in 0..DIM {
-        for x in 0..DIM {
-            visitor.visit(matrix.get(x, y));
-        }
-        visitor.finish();
-    }
-    visitor.count
-}
-
-pub fn part1b(input: &str) -> usize {
-    input.matches("XMAS").count() + input.matches("SAMX").count()
-}
-
-pub fn test3(input: &str) -> usize {
-    const LEN: usize = (DIM + 1) * DIM;
-    let buf = {
-        let buf: [std::mem::MaybeUninit<u8>; LEN] =
-            [const { std::mem::MaybeUninit::uninit() }; LEN];
-        let mut buf2 = unsafe { std::mem::transmute::<_, [u8; LEN]>(buf) };
-        buf2.copy_from_slice(input.as_bytes());
-        buf2
-    };
-    black_box(&buf);
-    0
-}
-
-pub fn test4(input: &str) -> usize {
-    memchr(b'Z', input.as_bytes()).unwrap_or_default()
-}
-
 struct Matrix<'a>(&'a [u8]);
 
 impl Matrix<'_> {
@@ -109,7 +71,7 @@ enum VisitorState {
 
 struct Visitor {
     state: VisitorState,
-    count: u32,
+    count: usize,
 }
 
 impl Visitor {
@@ -139,8 +101,90 @@ impl Visitor {
     }
 }
 
-pub fn part2(_input: &str) -> u32 {
-    0
+enum Dir {
+    E,
+    SE,
+    S,
+    SW,
+    W,
+    NW,
+    N,
+    NE,
+}
+
+impl Dir {
+    const ALL: [Dir; 8] = [
+        Dir::E,
+        Dir::SE,
+        Dir::S,
+        Dir::SW,
+        Dir::W,
+        Dir::NW,
+        Dir::N,
+        Dir::NE,
+    ];
+
+    fn step(&self) -> isize {
+        const IDIM: isize = DIM as isize;
+        match self {
+            Dir::E => 1,
+            Dir::SE => IDIM + 2,
+            Dir::S => IDIM + 1,
+            Dir::SW => IDIM,
+            Dir::W => -1,
+            Dir::NW => -IDIM - 2,
+            Dir::N => -IDIM - 1,
+            Dir::NE => -IDIM,
+        }
+    }
+}
+
+pub fn test1(input: &str) -> usize {
+    let mut sum = 0;
+    let mut bytes = input.as_bytes();
+    while let Some(pos) = memchr(b'S', bytes) {
+        sum += 1;
+        bytes = &bytes[pos + 1..];
+    }
+    sum
+}
+
+pub fn test2(input: &str) -> usize {
+    const LEN: usize = DIM * (DIM + 1);
+    let bytes = input.as_bytes();
+    assert_eq!(LEN, bytes.len());
+    let mut sum = 0;
+    for i in 0..(bytes.len() as isize) {
+        if bytes[i as usize] == b'S' {
+            sum += 1;
+        }
+    }
+    sum
+}
+
+pub fn part2(input: &str) -> usize {
+    const LEN: usize = DIM * (DIM + 1);
+    let bytes = input.as_bytes();
+    assert_eq!(LEN, bytes.len());
+    let mut sum = 0;
+    for i in 0..(bytes.len() as isize) {
+        if bytes[i as usize] == b'S' {
+            for d in Dir::ALL {
+                let step = d.step();
+                let max_step = i + step * 3;
+                if !(0..(LEN as isize)).contains(&max_step) {
+                    continue;
+                }
+                if bytes[(i + step) as usize] == b'A'
+                    && bytes[(i + step * 2) as usize] == b'M'
+                    && bytes[(max_step) as usize] == b'X'
+                {
+                    sum += 1;
+                }
+            }
+        }
+    }
+    sum
 }
 
 #[cfg(test)]
@@ -148,9 +192,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_part1partial() {
+    fn test_test1() {
         let input = std::fs::read_to_string("data/input4.txt").unwrap();
-        assert_eq!(part1a(&input) as usize, part1b(&input));
+        assert_eq!(test1(&input), test2(&input));
     }
 
     #[test]
