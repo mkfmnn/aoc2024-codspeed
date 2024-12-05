@@ -194,8 +194,8 @@ pub fn part2(input: &str) -> usize {
                 }
                 unsafe {
                     if (*bytes.get_unchecked((i + step) as usize) == b'A')
-                        && (*bytes.get_unchecked((i + step * 2) as usize) == b'M')
-                        && (*bytes.get_unchecked((max_step) as usize) == b'X')
+                        & (*bytes.get_unchecked((i + step * 2) as usize) == b'M')
+                        & (*bytes.get_unchecked((max_step) as usize) == b'X')
                     {
                         sum += 1;
                     }
