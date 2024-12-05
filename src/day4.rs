@@ -51,7 +51,11 @@ fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    let bytes = input.as_bytes();
+    unsafe { part2_inner(input.as_bytes()) }
+}
+
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn part2_inner(bytes: &[u8]) -> usize {
     let mut sum = 0;
     for i in (142..19598).step_by(64) {
         // range is happily divisible by 64
@@ -60,11 +64,13 @@ pub fn part2(input: &str) -> usize {
     sum
 }
 
-fn slice64(bytes: &[u8], i: usize) -> u8x64 {
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn slice64(bytes: &[u8], i: usize) -> u8x64 {
     u8x64::from_slice(&bytes[i..i + 64])
 }
 
-fn part2_check64(bytes: &[u8], i: usize) -> u32 {
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn part2_check64(bytes: &[u8], i: usize) -> u32 {
     let a = slice64(bytes, i);
     let d1 = slice64(bytes, i + DIM + 2);
     let d2 = slice64(bytes, i - DIM - 2);
