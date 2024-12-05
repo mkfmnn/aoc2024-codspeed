@@ -180,11 +180,6 @@ pub fn test2(input: &str) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    unsafe { part2_inner(input) }
-}
-
-#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
-unsafe fn part2_inner(input: &str) -> usize {
     const LEN: usize = DIM * (DIM + 1);
     let bytes = input.as_bytes();
     assert_eq!(LEN, bytes.len());
