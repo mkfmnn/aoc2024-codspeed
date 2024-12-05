@@ -15,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DAY: 4
-      RUSTFLAGS: '-C target-cpu=native'
     steps:
       - uses: actions/checkout@v4
 
