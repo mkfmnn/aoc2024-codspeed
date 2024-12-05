@@ -54,20 +54,20 @@ pub fn part2(input: &str) -> usize {
     for y in 1..DIM - 1 {
         let off = y * (DIM + 1);
         for x in 1..DIM - 1 {
-            unsafe {
-                if *bytes.get_unchecked(off + x) == b'A'
-                    && *bytes.get_unchecked(off + x + DIM + 2)
-                        ^ *bytes.get_unchecked(off + x - DIM - 2)
-                        == 30
-                    && *bytes.get_unchecked(off + x + DIM) ^ *bytes.get_unchecked(off + x - DIM)
-                        == 30
-                {
-                    sum += 1
-                }
+            if part2_check1(bytes, off + x) {
+                sum += 1
             }
         }
     }
     sum
+}
+
+fn part2_check1(bytes: &[u8], i: usize) -> bool {
+    unsafe {
+        *bytes.get_unchecked(i) == b'A'
+            && *bytes.get_unchecked(i + DIM + 2) ^ *bytes.get_unchecked(i - DIM - 2) == 30
+            && *bytes.get_unchecked(i + DIM) ^ *bytes.get_unchecked(i - DIM) == 30
+    }
 }
 
 #[cfg(test)]
