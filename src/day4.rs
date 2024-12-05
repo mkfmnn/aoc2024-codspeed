@@ -175,11 +175,13 @@ pub fn part2(input: &str) -> usize {
                 if !(0..(LEN as isize)).contains(&max_step) {
                     continue;
                 }
-                if bytes[(i + step) as usize] == b'A'
-                    && bytes[(i + step * 2) as usize] == b'M'
-                    && bytes[(max_step) as usize] == b'X'
-                {
-                    sum += 1;
+                unsafe {
+                    if (*bytes.get_unchecked((i + step) as usize) == b'A')
+                        && (*bytes.get_unchecked((i + step * 2) as usize) == b'M')
+                        && (*bytes.get_unchecked((max_step) as usize) == b'X')
+                    {
+                        sum += 1;
+                    }
                 }
             }
         }
