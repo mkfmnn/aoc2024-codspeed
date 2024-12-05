@@ -37,9 +37,9 @@ pub fn part1(input: &str) -> usize {
 fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
     let step = step(D) as usize;
     unsafe {
-        if bytes.get(i.overflowing_add(step.overflowing_mul(3).0).0) == Some(&b'S')
-            && *bytes.get_unchecked(i.overflowing_add(step.overflowing_mul(2).0).0) == b'A'
-            && *bytes.get_unchecked(i.overflowing_add(step).0) == b'M'
+        if bytes.get(i.wrapping_add(step.wrapping_mul(3))) == Some(&b'S')
+            && *bytes.get_unchecked(i.wrapping_add(step.wrapping_mul(2))) == b'A'
+            && *bytes.get_unchecked(i.wrapping_add(step)) == b'M'
         {
             1
         } else {
