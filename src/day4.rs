@@ -39,15 +39,13 @@ pub fn part1(input: &str) -> usize {
 fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
     let i = i as isize;
     let step = step(D);
-    unsafe {
-        if bytes.get((i + step * 3) as usize) == Some(&b'S')
-            && *bytes.get_unchecked((i + step * 2) as usize) == b'A'
-            && *bytes.get_unchecked((i + step) as usize) == b'M'
-        {
-            1
-        } else {
-            0
-        }
+    if bytes.get((i + step * 3) as usize) == Some(&b'S')
+        && bytes[(i + step * 2) as usize] == b'A'
+        && bytes[(i + step) as usize] == b'M'
+    {
+        1
+    } else {
+        0
     }
 }
 
