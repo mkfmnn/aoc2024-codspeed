@@ -1,3 +1,5 @@
+use std::simd::{cmp::SimdPartialEq, u8x64};
+
 const DIM: usize = 140;
 
 const fn step(d: u8) -> isize {
@@ -49,19 +51,41 @@ fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    let bytes = input.as_bytes();
+    unsafe { part2_inner(input.as_bytes()) }
+}
+
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn part2_inner(bytes: &[u8]) -> usize {
     let mut sum = 0;
-    for y in 1..DIM - 1 {
-        let off = y * (DIM + 1);
-        for x in 1..DIM - 1 {
-            if part2_check1(bytes, off + x) {
-                sum += 1
-            }
-        }
+
+    for i in (142..19598).step_by(64) {
+        // range is happily divisible by 64
+        sum += part2_check64(bytes, i) as usize;
     }
     sum
 }
 
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn slice64(bytes: &[u8], i: usize) -> u8x64 {
+    u8x64::from_slice(&bytes[i..i + 64])
+}
+
+#[target_feature(enable = "avx2,bmi1,bmi2,cmpxchg16b,lzcnt,movbe,popcnt")]
+unsafe fn part2_check64(bytes: &[u8], i: usize) -> u32 {
+    let a = slice64(bytes, i);
+    let d1 = slice64(bytes, i + DIM + 2);
+    let d2 = slice64(bytes, i - DIM - 2);
+    let d3 = slice64(bytes, i + DIM);
+    let d4 = slice64(bytes, i - DIM);
+    let is_a = a.simd_eq(u8x64::splat(b'A'));
+    let ms = u8x64::splat(30);
+    let d1_ok = (d1 ^ d2).simd_eq(ms);
+    let d2_ok = (d3 ^ d4).simd_eq(ms);
+    let all_ok = is_a & d1_ok & d2_ok;
+    all_ok.to_bitmask().count_ones()
+}
+
+#[allow(dead_code)]
 fn part2_check1(bytes: &[u8], i: usize) -> bool {
     unsafe {
         *bytes.get_unchecked(i) == b'A'
