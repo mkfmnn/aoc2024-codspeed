@@ -101,6 +101,7 @@ impl Visitor {
     }
 }
 
+/*
 enum Dir {
     E,
     SE,
@@ -138,6 +139,22 @@ impl Dir {
         }
     }
 }
+*/
+
+fn step(d: u8) -> isize {
+    const IDIM: isize = DIM as isize;
+    match d {
+        0 => 1,
+        1 => IDIM + 2,
+        2 => IDIM + 1,
+        3 => IDIM,
+        4 => -1,
+        5 => -IDIM - 2,
+        6 => -IDIM - 1,
+        7 => -IDIM,
+        _ => unreachable!(),
+    }
+}
 
 pub fn test1(input: &str) -> usize {
     let mut sum = 0;
@@ -169,8 +186,8 @@ pub fn part2(input: &str) -> usize {
     let mut sum = 0;
     for i in 0..(bytes.len() as isize) {
         if bytes[i as usize] == b'S' {
-            for d in Dir::ALL {
-                let step = d.step();
+            for d in 0..8 {
+                let step = step(d);
                 let max_step = i + step * 3;
                 if !(0..(LEN as isize)).contains(&max_step) {
                     continue;
