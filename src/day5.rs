@@ -14,16 +14,22 @@ fn part1_inner(bytes: &[u8]) -> usize {
     let rules = unsafe { &mut RULES };
     let mut bytes = parse_rules_simd(bytes, rules);
     let mut pages = Vec::<SortablePage>::with_capacity(24);
-    let mut sum = 0;
-    while !bytes.is_empty() {
-        pages.clear();
-        bytes = parse_pages_scalar(bytes, &mut pages);
-        if pages.array_windows().all(|[a, b]| a < b) {
-            let middle = pages[pages.len() / 2].0 as usize;
-            sum += middle;
-        }
+    // let mut sum = 0;
+    // while !bytes.is_empty() {
+    //     pages.clear();
+    //     bytes = parse_pages_scalar(bytes, &mut pages);
+    //     sum += part1_checkpages(&pages)
+    // }
+    // sum
+    parse_pages_simd(bytes, &mut pages)
+}
+
+fn part1_checkpages(pages: &Vec<SortablePage>) -> usize {
+    if pages.array_windows().all(|[a, b]| a < b) {
+        pages[pages.len() / 2].0 as usize
+    } else {
+        0
     }
-    sum
 }
 
 pub fn part2(input: &str) -> usize {
@@ -39,14 +45,17 @@ fn part2_inner(bytes: &[u8]) -> usize {
     while !bytes.is_empty() {
         pages.clear();
         bytes = parse_pages_scalar(bytes, &mut pages);
-        if pages.array_windows().all(|[a, b]| a < b) {
-            continue;
-        }
-        pages.sort();
-        let middle = pages[pages.len() / 2].0 as usize;
-        sum += middle;
+        sum += part2_checkpages(&mut pages);
     }
     sum
+}
+
+fn part2_checkpages(pages: &mut Vec<SortablePage>) -> usize {
+    if pages.array_windows().all(|[a, b]| a < b) {
+        return 0;
+    }
+    pages.sort();
+    pages[pages.len() / 2].0 as usize
 }
 
 #[inline]
@@ -183,6 +192,76 @@ fn parse_pages_scalar<'a>(bytes: &'a [u8], pages: &mut Vec<SortablePage>) -> &'a
         }
     }
     &bytes[i..]
+}
+
+fn parse_pages_simd<'a>(mut bytes: &'a [u8], pages: &mut Vec<SortablePage>) -> usize {
+    let mut sum = 0;
+    while bytes.len() >= 96 {
+        let p1 = u8x32::from_slice(bytes);
+        let p2 = u8x32::from_slice(&bytes[32..]);
+        let p3 = u8x32::from_slice(&bytes[64..]);
+        let tens = simd_swizzle!(
+            simd_swizzle!(
+                p1,
+                p2,
+                [
+                    0, 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48, 51, 54, 57, 60,
+                    63, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+            ),
+            p3,
+            [
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 34,
+                37, 40, 43, 46, 49, 52, 55, 58, 61
+            ]
+        );
+        let ones = simd_swizzle!(
+            simd_swizzle!(
+                p1,
+                p2,
+                [
+                    1, 4, 7, 10, 13, 16, 19, 22, 25, 28, 31, 34, 37, 40, 43, 46, 49, 52, 55, 58,
+                    61, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+            ),
+            p3,
+            [
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 32, 35,
+                38, 41, 44, 47, 50, 53, 56, 59, 62
+            ]
+        );
+        let delim = simd_swizzle!(
+            simd_swizzle!(
+                p1,
+                p2,
+                [
+                    2, 5, 8, 11, 14, 17, 20, 23, 26, 29, 32, 35, 38, 41, 44, 47, 50, 53, 56, 59,
+                    62, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                ]
+            ),
+            p3,
+            [
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 33, 36,
+                39, 42, 45, 48, 51, 54, 57, 60, 63
+            ]
+        );
+        let parsed = tens * u8x32::splat(10) + ones - u8x32::splat(b'0'.wrapping_mul(11));
+        let term = delim.simd_eq(u8x32::splat(b'\n'));
+        for (&a, b) in parsed.as_array().iter().zip(term.to_array()) {
+            pages.push(SortablePage(a));
+            if b {
+                sum += part1_checkpages(pages);
+                pages.clear();
+            }
+        }
+        bytes = &bytes[96..];
+    }
+    while !bytes.is_empty() {
+        bytes = parse_pages_scalar(&bytes, pages);
+        sum += part1_checkpages(pages);
+        pages.clear();
+    }
+    sum
 }
 
 #[cfg(test)]
