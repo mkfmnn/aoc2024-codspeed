@@ -1,0 +1,18 @@
+name: Debug
+
+on:
+  workflow_dispatch:
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  print:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Run tests
+      run: |
+        rustc -vV
+        rustc --print target-cpus
+        rustc --print target-features
