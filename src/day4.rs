@@ -49,7 +49,25 @@ fn check_dir<const D: u8>(bytes: &[u8], i: usize) -> usize {
 }
 
 pub fn part2(input: &str) -> usize {
-    todo!();
+    let bytes = input.as_bytes();
+    let mut sum = 0;
+    for y in 1..DIM - 1 {
+        let off = y * (DIM + 1);
+        for x in 1..DIM - 1 {
+            unsafe {
+                if *bytes.get_unchecked(off + x) == b'A'
+                    && *bytes.get_unchecked(off + x + DIM + 2)
+                        ^ *bytes.get_unchecked(off + x - DIM - 2)
+                        == 30
+                    && *bytes.get_unchecked(off + x + DIM) ^ *bytes.get_unchecked(off + x - DIM)
+                        == 30
+                {
+                    sum += 1
+                }
+            }
+        }
+    }
+    sum
 }
 
 #[cfg(test)]
