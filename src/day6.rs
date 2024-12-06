@@ -1,3 +1,5 @@
+use std::hint::unreachable_unchecked;
+
 use memchr::memchr;
 
 const DIM: usize = 130;
@@ -8,24 +10,30 @@ pub fn part1(input: &str) -> usize {
 }
 
 unsafe fn part1_inner(bytes: &[u8]) -> usize {
-    let mut visited = [false; DIM * (DIM + 1)];
-    let mut visited_count = 0;
+    let mut visited: [u8; DIM * (DIM + 1)] = [0; DIM * (DIM + 1)];
+    assert_eq!(visited.len(), bytes.len());
+    visited.copy_from_slice(bytes);
+    let mut visited_count = 1;
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
     loop {
-        if !*visited.get_unchecked(pos) {
-            *visited.get_unchecked_mut(pos) = true;
-            visited_count += 1;
-        }
-        if let Some(next_pos) = dir.step(pos) {
-            if *bytes.get_unchecked(next_pos) == b'#' {
+        let Some(next_pos) = dir.step(pos) else {
+            return visited_count;
+        };
+        match *visited.get_unchecked(next_pos) {
+            b'#' => {
                 dir = dir.rotate();
-            } else {
+            }
+            b'.' => {
+                *visited.get_unchecked_mut(next_pos) = b'^';
+                visited_count += 1;
                 pos = next_pos;
             }
-        } else {
-            return visited_count;
+            b'^' => {
+                pos = next_pos;
+            }
+            _ => unreachable_unchecked(),
         }
     }
 }
@@ -134,6 +142,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(0, part2(INPUT));
+        assert_eq!(1711, part2(INPUT));
     }
 }
