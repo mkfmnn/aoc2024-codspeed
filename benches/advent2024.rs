@@ -3,6 +3,7 @@ use std::hint::black_box;
 use aoc2024_codspeed::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 
+
 fn day1(c: &mut Criterion) {
     let input = include_str!("../data/input1.txt");
     let mut group = c.benchmark_group("day1");
@@ -43,5 +44,13 @@ fn day5(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, day1, day2, day3, day4, day5);
+fn day6(c: &mut Criterion) {
+    let input = include_str!("../data/input6.txt");
+    let mut group = c.benchmark_group("day6");
+    group.bench_function("day6 part1", |b| b.iter(|| day6::part1(black_box(&input))));
+    group.bench_function("day6 part2", |b| b.iter(|| day6::part2(black_box(&input))));
+    group.finish();
+}
+
+criterion_group!(benches, day1, day2, day3, day4, day5, day6);
 criterion_main!(benches);
