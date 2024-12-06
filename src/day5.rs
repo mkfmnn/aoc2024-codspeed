@@ -1,27 +1,18 @@
+// #![feature(array_chunks)]
 // #![feature(array_windows)]
 // #![feature(portable_simd)]
 use std::cmp::Ordering;
 use std::simd::prelude::*;
 
-static mut RULES: [i8; 0x10000] = [0; 0x10000];
+static mut RULES: [bool; 0x10000] = [false; 0x10000];
 
 pub fn part1(input: &str) -> usize {
     part1_inner(input.as_bytes())
 }
 
 fn part1_inner(bytes: &[u8]) -> usize {
-    #[allow(static_mut_refs)]
-    let rules = unsafe { &mut RULES };
-    let mut bytes = parse_rules_simd(bytes, rules);
     let mut pages = Vec::<SortablePage>::with_capacity(24);
-    // let mut sum = 0;
-    // while !bytes.is_empty() {
-    //     pages.clear();
-    //     bytes = parse_pages_scalar(bytes, &mut pages);
-    //     sum += part1_checkpages(&pages)
-    // }
-    // sum
-    parse_pages_simd(bytes, &mut pages)
+    parse_pages_simd(parse_rules_simd(bytes), &mut pages)
 }
 
 fn part1_checkpages(pages: &Vec<SortablePage>) -> usize {
@@ -37,9 +28,7 @@ pub fn part2(input: &str) -> usize {
 }
 
 fn part2_inner(bytes: &[u8]) -> usize {
-    #[allow(static_mut_refs)]
-    let rules = unsafe { &mut RULES };
-    let mut bytes = parse_rules_scalar(bytes, rules);
+    let mut bytes = parse_rules_scalar(bytes);
     let mut pages = Vec::<SortablePage>::with_capacity(24);
     let mut sum = 0;
     while !bytes.is_empty() {
@@ -51,7 +40,7 @@ fn part2_inner(bytes: &[u8]) -> usize {
 }
 
 fn part2_checkpages(pages: &mut Vec<SortablePage>) -> usize {
-    if pages.array_windows().all(|[a, b]| a < b) {
+    if pages.is_sorted() {
         return 0;
     }
     pages.sort();
@@ -69,21 +58,24 @@ fn parse_2digit(bytes: &[u8]) -> u8 {
     }
 }
 
-fn parse_rules_scalar<'a>(bytes: &'a [u8], rules: &mut [i8; 0x10000]) -> &'a [u8] {
+fn parse_rules_scalar<'a>(bytes: &'a [u8]) -> &'a [u8] {
+    #[allow(static_mut_refs)]
+    let rules = unsafe { &mut RULES };
     let mut i = 0;
     while bytes[i] != b'\n' {
         unsafe {
             let a = parse_2digit(&bytes[i..i + 2]);
             let b = parse_2digit(&bytes[i + 3..i + 5]);
-            *rules.get_unchecked_mut((a as usize) << 8 | b as usize) = -1;
-            *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = 1;
+            *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = true;
         }
         i += 6;
     }
     &bytes[i + 1..]
 }
 
-fn parse_rules_simd<'a>(mut bytes: &'a [u8], rules: &mut [i8; 0x10000]) -> &'a [u8] {
+fn parse_rules_simd<'a>(mut bytes: &'a [u8]) -> &'a [u8] {
+    #[allow(static_mut_refs)]
+    let rules = unsafe { &mut RULES };
     loop {
         let p1 = u8x32::from_slice(bytes);
         let p2 = u8x32::from_slice(&bytes[32..]);
@@ -128,8 +120,7 @@ fn parse_rules_simd<'a>(mut bytes: &'a [u8], rules: &mut [i8; 0x10000]) -> &'a [
                     return &bytes[len + 1..];
                 }
                 unsafe {
-                    *rules.get_unchecked_mut((a as usize) << 8 | b as usize) = -1;
-                    *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = 1;
+                    *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = true;
                 }
                 len += 6;
             }
@@ -137,8 +128,7 @@ fn parse_rules_simd<'a>(mut bytes: &'a [u8], rules: &mut [i8; 0x10000]) -> &'a [
         } else {
             for &[a, b] in parsed.as_array().array_chunks() {
                 unsafe {
-                    *rules.get_unchecked_mut((a as usize) << 8 | b as usize) = -1;
-                    *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = 1;
+                    *rules.get_unchecked_mut((b as usize) << 8 | a as usize) = true;
                 }
             }
             bytes = &bytes[96..];
@@ -156,9 +146,8 @@ impl Ord for SortablePage {
         let o = unsafe {
             #[allow(static_mut_refs)]
             match *RULES.get_unchecked((a as usize) << 8 | b as usize) {
-                1 => Ordering::Greater,
-                -1 => Ordering::Less,
-                _ => unreachable!(),
+                true => Ordering::Greater,
+                false => Ordering::Less,
             }
         };
         o
