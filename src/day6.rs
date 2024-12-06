@@ -32,14 +32,69 @@ unsafe fn part1_inner(bytes: &[u8]) -> usize {
 
 pub fn part2(input: &str) -> usize {
     assert_eq!(input.len(), DIM * DIM + DIM);
-    part2_inner(input.as_bytes())
+    unsafe { part2_inner(input.as_bytes()) }
 }
 
-fn part2_inner(bytes: &[u8]) -> usize {
-    0
+unsafe fn part2_inner(bytes: &[u8]) -> usize {
+    let mut visited = [None; DIM * (DIM + 1)];
+    let mut obstacle_count = 0;
+    //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
+    let mut pos = memchr(b'^', bytes).expect("no starting position found");
+    let mut dir = Dir::N;
+    loop {
+        if visited.get_unchecked(pos).is_none() {
+            *visited.get_unchecked_mut(pos) = Some(dir);
+        }
+        if let Some(next_pos) = dir.step(pos) {
+            if *bytes.get_unchecked(next_pos) == b'#' {
+                dir = dir.rotate();
+            } else {
+                // Before stepping, see if placing an obstacle at 'next' would send us into a loop
+                // can't place an obstacle if it's a square we already visited
+                if visited.get_unchecked(next_pos).is_none() {
+                    if check_loop(&bytes, visited.clone(), pos, dir) {
+                        obstacle_count += 1;
+                    }
+                }
+                pos = next_pos;
+            }
+        } else {
+            return obstacle_count;
+        }
+    }
 }
 
-#[derive(Clone, Copy, Debug)]
+unsafe fn check_loop(
+    bytes: &[u8],
+    mut visited: [Option<Dir>; DIM * (DIM + 1)],
+    start_pos: usize,
+    start_dir: Dir,
+) -> bool {
+    let mut pos = start_pos;
+    let mut dir = start_dir;
+    let obstacle = dir.step(pos).unwrap();
+    dir = dir.rotate();
+    loop {
+        let Some(next_pos) = dir.step(pos) else {
+            return false;
+        };
+        if *bytes.get_unchecked(next_pos) == b'#' || next_pos == obstacle {
+            dir = dir.rotate();
+        } else {
+            // Before stepping, see if we're stepping onto a path that
+            // we already traveled in the same direction
+            if visited.get_unchecked(next_pos) == &Some(dir) {
+                return true;
+            }
+            if visited.get_unchecked(pos).is_none() {
+                *visited.get_unchecked_mut(pos) = Some(dir);
+            }
+            pos = next_pos;
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 enum Dir {
     N,
     E,
