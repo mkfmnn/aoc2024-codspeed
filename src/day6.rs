@@ -4,21 +4,22 @@ const DIM: usize = 130;
 
 pub fn part1(input: &str) -> usize {
     assert_eq!(input.len(), DIM * DIM + DIM);
-    part1_inner(input.as_bytes())
+    unsafe { part1_inner(input.as_bytes()) }
 }
 
-fn part1_inner(bytes: &[u8]) -> usize {
+unsafe fn part1_inner(bytes: &[u8]) -> usize {
     let mut visited = [false; DIM * (DIM + 1)];
     let mut visited_count = 0;
+    //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
     loop {
-        if !visited[pos] {
-            visited[pos] = true;
+        if !*visited.get_unchecked(pos) {
+            *visited.get_unchecked_mut(pos) = true;
             visited_count += 1;
         }
         if let Some(next_pos) = dir.step(pos) {
-            if bytes[next_pos] == b'#' {
+            if *bytes.get_unchecked(next_pos) == b'#' {
                 dir = dir.rotate();
             } else {
                 pos = next_pos;
