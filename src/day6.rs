@@ -1,10 +1,12 @@
 use memchr::memchr;
 
 const DIM: usize = 130;
+const LINE_LEN: usize = DIM + 1;
+const MAP_LEN: usize = DIM * LINE_LEN;
 const BLOCK_BITS: u8 = 0b10000;
 
 pub fn part1(input: &str) -> usize {
-    assert_eq!(input.len(), DIM * DIM + DIM);
+    assert_eq!(input.len(), MAP_LEN);
     unsafe { part1_inner(input.as_bytes()) }
 }
 
@@ -43,12 +45,12 @@ unsafe fn increment(arr: &mut [u64; 267], i: usize) -> bool {
 }
 
 pub fn part2(input: &str) -> usize {
-    assert_eq!(input.len(), DIM * DIM + DIM);
+    assert_eq!(input.len(), MAP_LEN);
     unsafe { part2_inner(input.as_bytes()) }
 }
 
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
-    let mut map = [0u8; DIM * (DIM + 1)];
+    let mut map = [0u8; MAP_LEN];
     assert_eq!(bytes.len(), map.len());
     let mut pos = usize::MAX;
     for (i, c) in bytes.iter().enumerate() {
@@ -86,8 +88,8 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
     }
 }
 
-fn check_loop(map: &[u8; DIM * (DIM + 1)], mut pos: usize, mut dir: Dir) -> bool {
-    let mut overlay = [0u8; DIM * (DIM + 1)];
+fn check_loop(map: &[u8; MAP_LEN], mut pos: usize, mut dir: Dir) -> bool {
+    let mut overlay = [0u8; MAP_LEN];
     overlay[dir.step(pos).unwrap()] = BLOCK_BITS;
     dir = dir.rotate();
     loop {
@@ -135,10 +137,10 @@ impl Dir {
 
     fn step(self, cur_pos: usize) -> Option<usize> {
         match self {
-            Dir::N => (cur_pos >= DIM + 1).then(|| cur_pos - (DIM + 1)),
-            Dir::E => (cur_pos % (DIM + 1) != DIM).then(|| cur_pos + 1),
-            Dir::S => (cur_pos < (DIM - 1) * (DIM + 1)).then(|| cur_pos + (DIM + 1)),
-            Dir::W => (cur_pos % (DIM + 1) != 0).then(|| cur_pos - 1),
+            Dir::N => (cur_pos >= LINE_LEN).then(|| cur_pos - LINE_LEN),
+            Dir::E => (cur_pos % LINE_LEN != DIM).then(|| cur_pos + 1),
+            Dir::S => (cur_pos < (DIM - 1) * LINE_LEN).then(|| cur_pos + LINE_LEN),
+            Dir::W => (cur_pos % LINE_LEN != 0).then(|| cur_pos - 1),
         }
     }
 
