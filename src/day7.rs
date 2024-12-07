@@ -8,7 +8,7 @@ pub fn part2(input: &str) -> u64 {
 
 pub fn part_inner<F>(input: &str, f: F) -> u64
 where
-    F: Fn(u64, u64, &[u64]) -> bool,
+    F: Fn(u64, &[u64]) -> bool,
 {
     let mut sum = 0;
     for line in input.lines() {
@@ -18,32 +18,38 @@ where
             .split(' ')
             .map(|s| s.parse::<u64>().unwrap())
             .collect::<Vec<_>>();
-        let (&first, rest) = nums.split_first().unwrap();
-        if f(target, first, rest) {
+        if f(target, &nums) {
             sum += target;
         }
     }
     sum
 }
 
-fn recurse1(target: u64, accum: u64, rest: &[u64]) -> bool {
-    let Some((&first, rest)) = rest.split_first() else {
-        return target == accum;
-    };
-    recurse1(target, accum + first, rest) || recurse1(target, accum * first, rest)
+fn recurse1(target: u64, nums: &[u64]) -> bool {
+    let (&last, rest) = nums.split_last().unwrap();
+    if rest.is_empty() {
+        return last == target;
+    }
+    if target % last == 0 && recurse1(target / last, rest) {
+        return true;
+    }
+    target > last && recurse1(target - last, rest)
 }
 
-fn recurse2(target: u64, accum: u64, rest: &[u64]) -> bool {
-    let Some((&first, rest)) = rest.split_first() else {
-        return target == accum;
-    };
-    recurse2(target, accum + first, rest)
-        || recurse2(target, accum * first, rest)
-        || recurse2(target, concat(accum, first), rest)
-}
-
-fn concat(a: u64, b: u64) -> u64 {
-    a * 10u64.pow(b.ilog10() + 1) + b
+fn recurse2(target: u64, nums: &[u64]) -> bool {
+    let (&last, rest) = nums.split_last().unwrap();
+    if rest.is_empty() {
+        return last == target;
+    }
+    if target % last == 0 && recurse2(target / last, rest) {
+        return true;
+    }
+    let last_digits = last.ilog10() + 1;
+    let last_mul = 10u64.pow(last_digits);
+    if target % last_mul == last && recurse2(target / last_mul, rest) {
+        return true;
+    }
+    target > last && recurse2(target - last, rest)
 }
 
 #[cfg(test)]
