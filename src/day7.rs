@@ -8,7 +8,7 @@ pub fn part2(input: &str) -> u64 {
 
 fn part_inner<F>(mut input: &[u8], f: F) -> u64
 where
-    F: Fn(u64, &[u64]) -> bool,
+    F: Fn(u64, &[u32]) -> bool,
 {
     let mut sum = 0;
     let mut nums = Vec::new();
@@ -17,7 +17,7 @@ where
         input = next_input;
         loop {
             let (n, eol, next_input) = unsafe { parse_fast(input) };
-            nums.push(n as u64);
+            nums.push(n);
             input = next_input;
             if eol {
                 break;
@@ -74,8 +74,9 @@ unsafe fn parse_fast(input: &[u8]) -> (u32, bool, &[u8]) {
     unreachable!();
 }
 
-fn recurse1(target: u64, nums: &[u64]) -> bool {
+fn recurse1(target: u64, nums: &[u32]) -> bool {
     let (&last, rest) = nums.split_last().unwrap();
+    let last = last as u64;
     if rest.is_empty() {
         return last == target;
     }
@@ -85,8 +86,9 @@ fn recurse1(target: u64, nums: &[u64]) -> bool {
     target > last && recurse1(target - last, rest)
 }
 
-fn recurse2(target: u64, nums: &[u64]) -> bool {
+fn recurse2(target: u64, nums: &[u32]) -> bool {
     let (&last, rest) = nums.split_last().unwrap();
+    let last = last as u64;
     if rest.is_empty() {
         return last == target;
     }
