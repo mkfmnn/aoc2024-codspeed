@@ -1,8 +1,10 @@
 use memchr::memchr;
+use rayon::prelude::*;
 
 const DIM: usize = 130;
 const LINE_LEN: usize = DIM + 1;
 const MAP_LEN: usize = DIM * LINE_LEN;
+const BATCHES: usize = 8192;
 
 pub fn part1(input: &str) -> usize {
     assert_eq!(input.len(), MAP_LEN);
@@ -98,21 +100,32 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
+    let mut candidate_obstacles = Vec::with_capacity(BATCHES);
     loop {
         let Some(next_pos) = dir.step(pos) else {
-            return obstacle_count;
+            break;
         };
         if *bytes.get_unchecked(next_pos) == b'#' {
             dir = dir.rotate();
         } else {
             if increment(&mut visited, next_pos) {
-                if check_loop(&map, pos, dir.rotate(), next_pos) {
-                    obstacle_count += 1;
-                }
+                candidate_obstacles.push((pos, dir.rotate(), next_pos));
             }
             pos = next_pos;
         }
+        if candidate_obstacles.len() == BATCHES {
+            obstacle_count += candidate_obstacles
+                .par_iter()
+                .filter(|&&(pos, dir, obs)| check_loop(&map, pos, dir, obs))
+                .count();
+            candidate_obstacles.clear();
+        }
     }
+    obstacle_count
+        + candidate_obstacles
+            .par_iter()
+            .filter(|&&(pos, dir, obs)| check_loop(&map, pos, dir, obs))
+            .count()
 }
 
 fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -> bool {
