@@ -1,6 +1,7 @@
 use memchr::memchr;
 
 const DIM: usize = 130;
+const BLOCK_BITS: u8 = 0b10000;
 
 pub fn part1(input: &str) -> usize {
     assert_eq!(input.len(), DIM * DIM + DIM);
@@ -41,54 +42,67 @@ pub fn part2(input: &str) -> usize {
 }
 
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
-    let mut visited = [0u8; DIM * (DIM + 1)];
-    visited.copy_from_slice(bytes);
-    let mut pos = memchr(b'^', bytes).expect("no starting position found");
+    let mut map = [0u8; DIM * (DIM + 1)];
+    assert_eq!(bytes.len(), map.len());
+    let mut pos = usize::MAX;
+    for (i, c) in bytes.iter().enumerate() {
+        map[i] = match &c {
+            b'.' => 0,
+            b'\n' => 0,
+            b'#' => BLOCK_BITS,
+            b'^' => {
+                pos = i;
+                Dir::N.bit()
+            }
+            _ => unreachable!(),
+        }
+    }
     let mut dir = Dir::N;
     let mut obstacle_count = 0;
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return obstacle_count;
         };
-        let next = *visited.get_unchecked(next_pos);
-        if next == b'#' {
+        let next = *map.get_unchecked(next_pos);
+        if next == BLOCK_BITS {
             dir = dir.rotate();
         } else {
             // Before stepping, see if placing an obstacle at 'next' would send us into a loop
             // can't place an obstacle if it's a square we already visited
-            if next == b'.' {
-                if check_loop(visited.clone(), pos, dir) {
+            if next == 0 {
+                if check_loop(&map, pos, dir) {
                     obstacle_count += 1;
                 }
-                *visited.get_unchecked_mut(next_pos) = dir.char();
             }
+            *map.get_unchecked_mut(next_pos) |= dir.bit();
             pos = next_pos;
         }
     }
 }
 
-fn check_loop(mut visited: [u8; DIM * (DIM + 1)], start_pos: usize, start_dir: Dir) -> bool {
-    let mut pos = start_pos;
-    let mut dir = start_dir;
-    visited[dir.step(pos).unwrap()] = b'#';
+fn check_loop(map: &[u8; DIM * (DIM + 1)], mut pos: usize, mut dir: Dir) -> bool {
+    let mut overlay = [0u8; DIM * (DIM + 1)];
+    overlay[dir.step(pos).unwrap()] = BLOCK_BITS;
     dir = dir.rotate();
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return false;
         };
-        let next = unsafe { visited.get_unchecked_mut(next_pos) };
-        match *next {
-            b'#' => {
+        let overlay_next = unsafe { overlay.get_unchecked_mut(next_pos) };
+        let next = unsafe { *map.get_unchecked(next_pos) | *overlay_next };
+        match next {
+            BLOCK_BITS => {
                 dir = dir.rotate();
             }
-            b'.' => {
-                *next = dir.char();
+            0 => {
+                *overlay_next = dir.bit();
                 pos = next_pos;
             }
             _ => {
-                if *next == dir.char() {
+                if next & dir.bit() != 0 {
                     return true;
                 }
+                *overlay_next |= dir.bit();
                 pos = next_pos;
             }
         }
@@ -128,6 +142,15 @@ impl Dir {
             Dir::E => b'>',
             Dir::S => b'v',
             Dir::W => b'<',
+        }
+    }
+
+    fn bit(self) -> u8 {
+        match self {
+            Dir::N => 0b0001,
+            Dir::E => 0b0010,
+            Dir::S => 0b0100,
+            Dir::W => 0b1000,
         }
     }
 }
