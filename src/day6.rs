@@ -8,14 +8,13 @@ pub fn part1(input: &str) -> usize {
 }
 
 unsafe fn part1_inner(bytes: &[u8]) -> usize {
-    let mut visited = [false; DIM * (DIM + 1)];
+    let mut visited = [0u64; 267];
     let mut visited_count = 0;
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
     loop {
-        if !*visited.get_unchecked(pos) {
-            *visited.get_unchecked_mut(pos) = true;
+        if increment(&mut visited, pos) {
             visited_count += 1;
         }
         if let Some(next_pos) = dir.step(pos) {
@@ -27,6 +26,18 @@ unsafe fn part1_inner(bytes: &[u8]) -> usize {
         } else {
             return visited_count;
         }
+    }
+}
+
+unsafe fn increment(arr: &mut [u64; 267], i: usize) -> bool {
+    let offset = i / 64;
+    let bit = 1 << (i % 64);
+    let cell = arr.get_unchecked_mut(offset);
+    if (*cell & bit) == 0 {
+        *cell |= bit;
+        return true;
+    } else {
+        return false;
     }
 }
 
@@ -134,6 +145,6 @@ mod tests {
 
     #[test]
     fn test_part2() {
-        assert_eq!(0, part2(INPUT));
+        assert_eq!(1711, part2(INPUT));
     }
 }
