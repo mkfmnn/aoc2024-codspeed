@@ -9,30 +9,36 @@ pub fn part1(input: &str) -> usize {
 }
 
 unsafe fn part1_inner(bytes: &[u8]) -> usize {
-    let mut visited = [0u8; DIM * (DIM + 1)];
-    visited.copy_from_slice(bytes);
-    let mut visited_count = 1;
+    let mut visited = [0u64; 267];
+    let mut visited_count = 0;
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
     loop {
-        let Some(next_pos) = dir.step(pos) else {
-            return visited_count;
-        };
-        match *visited.get_unchecked(next_pos) {
-            b'#' => {
-                dir = dir.rotate();
-            }
-            b'.' => {
-                *visited.get_unchecked_mut(next_pos) = b'^';
-                visited_count += 1;
-                pos = next_pos;
-            }
-            b'^' => {
-                pos = next_pos;
-            }
-            _ => std::hint::unreachable_unchecked(),
+        if increment(&mut visited, pos) {
+            visited_count += 1;
         }
+        if let Some(next_pos) = dir.step(pos) {
+            if *bytes.get_unchecked(next_pos) == b'#' {
+                dir = dir.rotate();
+            } else {
+                pos = next_pos;
+            }
+        } else {
+            return visited_count;
+        }
+    }
+}
+
+unsafe fn increment(arr: &mut [u64; 267], i: usize) -> bool {
+    let offset = i / 64;
+    let bit = 1 << (i % 64);
+    let cell = arr.get_unchecked_mut(offset);
+    if (*cell & bit) == 0 {
+        *cell |= bit;
+        return true;
+    } else {
+        return false;
     }
 }
 
