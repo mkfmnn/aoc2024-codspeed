@@ -43,7 +43,7 @@ fn recurse2(target: u64, accum: u64, rest: &[u64]) -> bool {
 }
 
 fn concat(a: u64, b: u64) -> u64 {
-    format!("{a}{b}").parse::<u64>().unwrap()
+    a * 10u64.pow(b.ilog10() + 1) + b
 }
 
 #[cfg(test)]
