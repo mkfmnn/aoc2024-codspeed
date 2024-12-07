@@ -74,6 +74,15 @@ unsafe fn parse_fast(input: &[u8]) -> (u32, bool, &[u8]) {
     unreachable!();
 }
 
+fn fast_logpow(n: u64) -> u64 {
+    match n {
+        0..10 => 10,
+        10..100 => 100,
+        100..1000 => 1000,
+        _ => unreachable!(),
+    }
+}
+
 fn recurse1(target: u64, nums: &[u32]) -> bool {
     let (&last, rest) = nums.split_last().unwrap();
     let last = last as u64;
@@ -95,8 +104,7 @@ fn recurse2(target: u64, nums: &[u32]) -> bool {
     if target % last == 0 && recurse2(target / last, rest) {
         return true;
     }
-    let last_digits = last.ilog10() + 1;
-    let last_mul = 10u64.pow(last_digits);
+    let last_mul = fast_logpow(last);
     if target % last_mul == last && recurse2(target / last_mul, rest) {
         return true;
     }
