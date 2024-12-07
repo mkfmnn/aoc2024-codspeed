@@ -1,28 +1,77 @@
 pub fn part1(input: &str) -> u64 {
-    part_inner(input, recurse1)
+    part_inner(input.as_bytes(), recurse1)
 }
 
 pub fn part2(input: &str) -> u64 {
-    part_inner(input, recurse2)
+    part_inner(input.as_bytes(), recurse2)
 }
 
-pub fn part_inner<F>(input: &str, f: F) -> u64
+fn part_inner<F>(mut input: &[u8], f: F) -> u64
 where
     F: Fn(u64, &[u64]) -> bool,
 {
     let mut sum = 0;
-    for line in input.lines() {
-        let (target, rest) = line.split_once(": ").unwrap();
-        let target = target.parse::<u64>().unwrap();
-        let nums = rest
-            .split(' ')
-            .map(|s| s.parse::<u64>().unwrap())
-            .collect::<Vec<_>>();
+    let mut nums = Vec::new();
+    while !input.is_empty() {
+        let (target, next_input) = unsafe { parse_target_fast(input) };
+        input = next_input;
+        loop {
+            let (n, eol, next_input) = unsafe { parse_fast(input) };
+            nums.push(n);
+            input = next_input;
+            if eol {
+                break;
+            }
+        }
         if f(target, &nums) {
             sum += target;
         }
+        nums.clear();
     }
     sum
+}
+
+unsafe fn parse_target_fast(input: &[u8]) -> (u64, &[u8]) {
+    let mut n = *input.get_unchecked(0) as u64 - b'0' as u64;
+    let mut i = 1;
+    loop {
+        let c = *input.get_unchecked(i);
+        if c == b':' {
+            return (n, input.get_unchecked(i + 2..));
+        }
+        n *= 10;
+        n += c as u64 - b'0' as u64;
+        i += 1;
+    }
+}
+
+unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
+    let c1 = *input.get_unchecked(0);
+    let c2 = *input.get_unchecked(1);
+    if c2 == b' ' || c2 == b'\n' {
+        return (
+            c1 as u64 - b'0' as u64,
+            c2 == b'\n',
+            input.get_unchecked(2..),
+        );
+    }
+    let c3 = *input.get_unchecked(2);
+    if c3 == b' ' || c3 == b'\n' {
+        return (
+            c1 as u64 * 10 + c2 as u64 - b'0' as u64 * 11,
+            c3 == b'\n',
+            input.get_unchecked(3..),
+        );
+    };
+    let c4 = *input.get_unchecked(3);
+    if c4 == b' ' || c4 == b'\n' {
+        return (
+            c1 as u64 * 100 + c2 as u64 * 10 + c3 as u64 - b'0' as u64 * 111,
+            c4 == b'\n',
+            input.get_unchecked(4..),
+        );
+    };
+    unreachable!();
 }
 
 fn recurse1(target: u64, nums: &[u64]) -> bool {
