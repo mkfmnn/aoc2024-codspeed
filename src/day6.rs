@@ -1,8 +1,6 @@
 use memchr::memchr;
-use rayon::prelude::*;
 
 const DIM: usize = 130;
-const BATCHES: usize = 1024;
 
 pub fn part1(input: &str) -> usize {
     assert_eq!(input.len(), DIM * DIM + DIM);
@@ -43,55 +41,37 @@ pub fn part2(input: &str) -> usize {
 }
 
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
-    let mut checkpoint = [0u8; DIM * (DIM + 1)];
-    checkpoint.copy_from_slice(bytes);
-    let mut visited = checkpoint.clone();
-    let mut pos = memchr(b'^', bytes).expect("no starting position found");
-    let mut checkpoint_pos = pos;
-    let mut dir = Dir::N;
-    let mut checkpoint_dir = dir;
-    let mut candidate_obstacles = Vec::<usize>::with_capacity(BATCHES);
-    let mut obstacles = 0;
-    loop {
-        let Some(next_pos) = dir.step(pos) else {
-            break;
-        };
-        match *visited.get_unchecked(next_pos) {
-            b'#' => {
-                dir = dir.rotate();
-            }
-            b'.' => {
-                *visited.get_unchecked_mut(next_pos) = dir.char();
-                candidate_obstacles.push(next_pos);
-                pos = next_pos;
-            }
-            _ => {
-                pos = next_pos;
-            }
-        }
-        if candidate_obstacles.len() == BATCHES {
-            obstacles += candidate_obstacles
-                .iter()
-                .filter(|&&obs| check_loop(&checkpoint, checkpoint_pos, checkpoint_dir, obs))
-                .count();
-            candidate_obstacles.clear();
-            checkpoint.copy_from_slice(&visited);
-            checkpoint_pos = pos;
-            checkpoint_dir = dir;
-        }
-    }
-
-    obstacles
-        + candidate_obstacles
-            .iter()
-            .filter(|&&obs| check_loop(&checkpoint, checkpoint_pos, checkpoint_dir, obs))
-            .count()
-}
-
-fn check_loop(bytes: &[u8], mut pos: usize, mut dir: Dir, obstacle: usize) -> bool {
     let mut visited = [0u8; DIM * (DIM + 1)];
     visited.copy_from_slice(bytes);
-    visited[obstacle] = b'#';
+    let mut pos = memchr(b'^', bytes).expect("no starting position found");
+    let mut dir = Dir::N;
+    let mut obstacle_count = 0;
+    loop {
+        let Some(next_pos) = dir.step(pos) else {
+            return obstacle_count;
+        };
+        let next = *visited.get_unchecked(next_pos);
+        if next == b'#' {
+            dir = dir.rotate();
+        } else {
+            // Before stepping, see if placing an obstacle at 'next' would send us into a loop
+            // can't place an obstacle if it's a square we already visited
+            if next == b'.' {
+                if check_loop(visited.clone(), pos, dir) {
+                    obstacle_count += 1;
+                }
+                *visited.get_unchecked_mut(next_pos) = dir.char();
+            }
+            pos = next_pos;
+        }
+    }
+}
+
+fn check_loop(mut visited: [u8; DIM * (DIM + 1)], start_pos: usize, start_dir: Dir) -> bool {
+    let mut pos = start_pos;
+    let mut dir = start_dir;
+    visited[dir.step(pos).unwrap()] = b'#';
+    dir = dir.rotate();
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return false;
