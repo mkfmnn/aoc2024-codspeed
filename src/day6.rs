@@ -1,9 +1,10 @@
+use std::collections::{hash_set::Entry, HashSet};
+
 use memchr::memchr;
 
 const DIM: usize = 130;
 const LINE_LEN: usize = DIM + 1;
 const MAP_LEN: usize = DIM * LINE_LEN;
-const BLOCK_BITS: u8 = 0b10000;
 
 pub fn part1(input: &str) -> usize {
     assert_eq!(input.len(), MAP_LEN);
@@ -50,70 +51,121 @@ pub fn part2(input: &str) -> usize {
 }
 
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
-    let mut map = [0u8; MAP_LEN];
-    assert_eq!(bytes.len(), map.len());
-    let mut pos = usize::MAX;
-    for (i, c) in bytes.iter().enumerate() {
-        map[i] = match &c {
-            b'.' => 0,
-            b'\n' => 0,
-            b'#' => BLOCK_BITS,
-            b'^' => {
-                pos = i;
-                Dir::N.bit()
+    let map = {
+        let mut map = [0u32; MAP_LEN * 4]; // MaybeUninit?
+        for i in 0..map.len() {
+            let dir = Dir::from((i & 3) as u8);
+            let mut pos = i >> 2;
+            map[i] = if bytes[pos] == b'\n' {
+                0
+            } else {
+                loop {
+                    let Some(next_pos) = dir.step(pos) else {
+                        break u32::MAX;
+                    };
+                    if bytes[next_pos] == b'#' {
+                        let mut next_dir = dir.rotate();
+                        if next_dir.step(pos).is_some_and(|p| bytes[p] == b'#') {
+                            next_dir = next_dir.rotate();
+                        }
+                        break next_dir.index() as u32 | (pos << 2) as u32;
+                    }
+                    pos = next_pos;
+                }
             }
-            _ => unreachable!(),
         }
-    }
-    let mut dir = Dir::N;
+        map
+    };
+    // std::hint::black_box(map);
+
+    let mut visited = [0u64; 267];
     let mut obstacle_count = 0;
+    //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
+    let mut pos = memchr(b'^', bytes).expect("no starting position found");
+    let mut dir = Dir::N;
+    let mut visited_set = HashSet::<u32>::new();
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return obstacle_count;
         };
-        let next = *map.get_unchecked(next_pos);
-        if next == BLOCK_BITS {
+        if *bytes.get_unchecked(next_pos) == b'#' {
             dir = dir.rotate();
         } else {
-            // Before stepping, see if placing an obstacle at 'next' would send us into a loop
-            // can't place an obstacle if it's a square we already visited
-            if next == 0 {
-                if check_loop(&map, pos, dir) {
+            if increment(&mut visited, next_pos) {
+                if check_loop(&map, pos, dir.rotate(), next_pos, &mut visited_set) {
+                    //println!("obstacle: {},{}", next_pos % LINE_LEN, next_pos / LINE_LEN);
                     obstacle_count += 1;
                 }
+                visited_set.clear();
             }
-            *map.get_unchecked_mut(next_pos) |= dir.bit();
             pos = next_pos;
+            //println!("visit: {},{}", next_pos % LINE_LEN, next_pos / LINE_LEN);
         }
     }
 }
 
-fn check_loop(map: &[u8; MAP_LEN], mut pos: usize, mut dir: Dir) -> bool {
-    let mut overlay = [0u8; MAP_LEN];
-    overlay[dir.step(pos).unwrap()] = BLOCK_BITS;
-    dir = dir.rotate();
+fn check_loop(
+    map: &[u32; MAP_LEN * 4],
+    pos: usize,
+    dir: Dir,
+    obstacle: usize,
+    visited: &mut HashSet<u32>,
+) -> bool {
+    let obstacle_x = obstacle % LINE_LEN;
+    let obstacle_y = obstacle / LINE_LEN;
+    let mut state = pos << 2 | dir.index() as usize;
     loop {
-        let Some(next_pos) = dir.step(pos) else {
-            return false;
-        };
-        let overlay_next = unsafe { overlay.get_unchecked_mut(next_pos) };
-        let next = unsafe { *map.get_unchecked(next_pos) | *overlay_next };
-        match next {
-            BLOCK_BITS => {
-                dir = dir.rotate();
-            }
+        let mut next_state = map[state as usize] as usize;
+        // is the obstacle between the current position and the next one?
+        // let x = (state >> 2) % LINE_LEN;
+        // let y = (state >> 2) / LINE_LEN;
+        match state % 4 {
             0 => {
-                *overlay_next = dir.bit();
-                pos = next_pos;
-            }
-            _ => {
-                if next & dir.bit() != 0 {
-                    return true;
+                if (state >> 2) % LINE_LEN == obstacle_x
+                    && (state >> 2) / LINE_LEN > obstacle_y
+                    && (next_state == u32::MAX as usize
+                        || (next_state >> 2) / LINE_LEN <= obstacle_y)
+                {
+                    next_state = (obstacle + LINE_LEN) << 2 | 1;
                 }
-                *overlay_next |= dir.bit();
-                pos = next_pos;
             }
+            1 => {
+                if (state >> 2) / LINE_LEN == obstacle_y
+                    && (state >> 2) % LINE_LEN < obstacle_x
+                    && (next_state == u32::MAX as usize
+                        || (next_state >> 2) % LINE_LEN >= obstacle_x)
+                {
+                    next_state = (obstacle - 1) << 2 | 2;
+                }
+            }
+            2 => {
+                if (state >> 2) % LINE_LEN == obstacle_x
+                    && (state >> 2) / LINE_LEN < obstacle_y
+                    && (next_state == u32::MAX as usize
+                        || (next_state >> 2) / LINE_LEN >= obstacle_y)
+                {
+                    next_state = (obstacle - LINE_LEN) << 2 | 3;
+                }
+            }
+            3 => {
+                if (state >> 2) / LINE_LEN == obstacle_y
+                    && (state >> 2) % LINE_LEN > obstacle_x
+                    && (next_state == u32::MAX as usize
+                        || (next_state >> 2) % LINE_LEN <= obstacle_x)
+                {
+                    next_state = (obstacle + 1) << 2 | 0;
+                }
+            }
+            _ => unreachable!(),
         }
+        if next_state == u32::MAX as usize {
+            return false;
+        }
+        match visited.entry(next_state as u32) {
+            Entry::Occupied(_) => return true,
+            e @ Entry::Vacant(_) => e.insert(),
+        };
+        state = next_state;
     }
 }
 
@@ -126,6 +178,8 @@ enum Dir {
 }
 
 impl Dir {
+    const ALL: [Dir; 4] = [Dir::N, Dir::E, Dir::S, Dir::W];
+
     fn rotate(self) -> Dir {
         match self {
             Dir::N => Dir::E,
@@ -144,21 +198,22 @@ impl Dir {
         }
     }
 
-    fn char(self) -> u8 {
+    fn index(self) -> u8 {
         match self {
-            Dir::N => b'^',
-            Dir::E => b'>',
-            Dir::S => b'v',
-            Dir::W => b'<',
+            Dir::N => 0,
+            Dir::E => 1,
+            Dir::S => 2,
+            Dir::W => 3,
         }
     }
 
-    fn bit(self) -> u8 {
-        match self {
-            Dir::N => 0b0001,
-            Dir::E => 0b0010,
-            Dir::S => 0b0100,
-            Dir::W => 0b1000,
+    fn from(idx: u8) -> Dir {
+        match idx {
+            0 => Dir::N,
+            1 => Dir::E,
+            2 => Dir::S,
+            3 => Dir::W,
+            _ => unreachable!(),
         }
     }
 }
