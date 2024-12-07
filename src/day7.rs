@@ -71,15 +71,17 @@ unsafe fn parse_fast(input: &[u8]) -> (u32, bool, &[u8]) {
             input.get_unchecked(4..),
         );
     };
-    unreachable!();
+    std::hint::unreachable_unchecked();
 }
 
 fn fast_logpow(n: u64) -> u64 {
-    match n {
-        0..10 => 10,
-        10..100 => 100,
-        100..1000 => 1000,
-        _ => unreachable!(),
+    unsafe {
+        match n {
+            0..10 => 10,
+            10..100 => 100,
+            100..1000 => 1000,
+            _ => std::hint::unreachable_unchecked(),
+        }
     }
 }
 
