@@ -27,16 +27,10 @@ checksum = "55cc3b69f167a1ef2e161439aa98aed94e6028e5f9a59be9a6ffb47aef1651f9"
 name = "aoc2024-codspeed"
 version = "0.1.0"
 dependencies = [
- "atoi_radix10",
  "codspeed-criterion-compat",
  "memchr",
  "regex",
 ]
-
-[[package]]
-name = "atoi_radix10"
-version = "0.0.1"
-source = "git+https://github.com/gilescope/atoi_radix10.git#b1d6e6c1009f0971efebfa55a61b6cb7c0b5d641"
 
 [[package]]
 name = "autocfg"

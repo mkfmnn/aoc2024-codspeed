@@ -1,26 +1,22 @@
 pub fn part1(input: &str) -> u64 {
-    unsafe { part_inner(input.as_bytes(), recurse1) }
+    part_inner(input.as_bytes(), recurse1)
 }
 
 pub fn part2(input: &str) -> u64 {
-    unsafe { part_inner(input.as_bytes(), recurse2) }
+    part_inner(input.as_bytes(), recurse2)
 }
 
-unsafe fn part_inner<F>(mut input: &[u8], f: F) -> u64
+fn part_inner<F>(mut input: &[u8], f: F) -> u64
 where
     F: Fn(u64, &[u64]) -> bool,
 {
     let mut sum = 0;
     let mut nums = Vec::new();
     while !input.is_empty() {
-        let mut i = 1;
-        while *input.get_unchecked(i) != b':' {
-            i += 1;
-        }
-        let target: u64 = atoi_radix10::parse(input.get_unchecked(0..i)).unwrap();
-        input = input.get_unchecked(i + 2..);
+        let (target, next_input) = unsafe { parse_target_fast(input) };
+        input = next_input;
         loop {
-            let (n, eol, next_input) = parse_fast(input);
+            let (n, eol, next_input) = unsafe { parse_fast(input) };
             nums.push(n);
             input = next_input;
             if eol {
@@ -33,6 +29,20 @@ where
         nums.clear();
     }
     sum
+}
+
+unsafe fn parse_target_fast(input: &[u8]) -> (u64, &[u8]) {
+    let mut n = *input.get_unchecked(0) as u64 - b'0' as u64;
+    let mut i = 1;
+    loop {
+        let c = *input.get_unchecked(i);
+        if c == b':' {
+            return (n, input.get_unchecked(i + 2..));
+        }
+        n *= 10;
+        n += c as u64 - b'0' as u64;
+        i += 1;
+    }
 }
 
 unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
