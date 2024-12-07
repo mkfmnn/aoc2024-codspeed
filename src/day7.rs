@@ -1,32 +1,33 @@
 pub fn part1(input: &str) -> u64 {
-    part_inner(input.as_bytes(), recurse1)
+    unsafe { part_inner(input.as_bytes(), recurse1) }
 }
 
 pub fn part2(input: &str) -> u64 {
-    part_inner(input.as_bytes(), recurse2)
+    unsafe { part_inner(input.as_bytes(), recurse2) }
 }
 
-fn part_inner<F>(mut input: &[u8], f: F) -> u64
+unsafe fn part_inner<F>(mut input: &[u8], f: F) -> u64
 where
-    F: Fn(u64, &[u32]) -> bool,
+    F: Fn(u64, usize, &[u32]) -> bool,
 {
     let mut sum = 0;
-    let mut nums = Vec::new();
+    let mut nums = [0u32; 20];
     while !input.is_empty() {
-        let (target, next_input) = unsafe { parse_target_fast(input) };
+        let (target, next_input) = parse_target_fast(input);
+        let mut i = 0;
         input = next_input;
         loop {
-            let (n, eol, next_input) = unsafe { parse_fast(input) };
-            nums.push(n);
+            let (n, eol, next_input) = parse_fast(input);
+            *nums.get_unchecked_mut(i) = n;
+            i += 1;
             input = next_input;
             if eol {
                 break;
             }
         }
-        if f(target, &nums) {
+        if f(target, i - 1, &nums) {
             sum += target;
         }
-        nums.clear();
     }
     sum
 }
@@ -85,32 +86,30 @@ fn fast_logpow(n: u64) -> u64 {
     }
 }
 
-fn recurse1(target: u64, nums: &[u32]) -> bool {
-    let (&last, rest) = nums.split_last().unwrap();
-    let last = last as u64;
-    if rest.is_empty() {
+fn recurse1(target: u64, idx: usize, nums: &[u32]) -> bool {
+    let last = unsafe { *nums.get_unchecked(idx) } as u64;
+    if idx == 0 {
         return last == target;
     }
-    if target % last == 0 && recurse1(target / last, rest) {
+    if target % last == 0 && recurse1(target / last, idx - 1, nums) {
         return true;
     }
-    target > last && recurse1(target - last, rest)
+    target > last && recurse1(target - last, idx - 1, nums)
 }
 
-fn recurse2(target: u64, nums: &[u32]) -> bool {
-    let (&last, rest) = nums.split_last().unwrap();
-    let last = last as u64;
-    if rest.is_empty() {
+fn recurse2(target: u64, idx: usize, nums: &[u32]) -> bool {
+    let last = unsafe { *nums.get_unchecked(idx) } as u64;
+    if idx == 0 {
         return last == target;
     }
-    if target % last == 0 && recurse2(target / last, rest) {
+    if target % last == 0 && recurse2(target / last, idx - 1, nums) {
         return true;
     }
     let last_mul = fast_logpow(last);
-    if target % last_mul == last && recurse2(target / last_mul, rest) {
+    if target % last_mul == last && recurse2(target / last_mul, idx - 1, nums) {
         return true;
     }
-    target > last && recurse2(target - last, rest)
+    target > last && recurse2(target - last, idx - 1, nums)
 }
 
 #[cfg(test)]
