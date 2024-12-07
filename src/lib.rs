@@ -1,6 +1,5 @@
 #![feature(array_chunks)]
 #![feature(array_windows)]
-#![feature(hash_set_entry)]
 #![feature(portable_simd)]
 
 pub mod day1;

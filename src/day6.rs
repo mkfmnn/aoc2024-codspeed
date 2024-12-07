@@ -51,25 +51,43 @@ pub fn part2(input: &str) -> usize {
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
     let map = {
         let mut map = [0u32; MAP_LEN * 4]; // MaybeUninit?
-        for i in 0..map.len() {
-            let dir = Dir::from((i & 3) as u8);
-            let mut pos = i >> 2;
-            map[i] = if bytes[pos] == b'\n' {
-                0
-            } else {
-                loop {
-                    let Some(next_pos) = dir.step(pos) else {
-                        break u32::MAX;
-                    };
-                    if bytes[next_pos] == b'#' {
-                        let mut next_dir = dir.rotate();
-                        if next_dir.step(pos).is_some_and(|p| bytes[p] == b'#') {
-                            next_dir = next_dir.rotate();
-                        }
-                        break next_dir.index() as u32 | (pos << 2) as u32;
-                    }
-                    pos = next_pos;
+        for y in 0..DIM {
+            let offset = y * LINE_LEN;
+            let mut next_state = u32::MAX;
+            map[offset << 2 | 3] = next_state;
+            for x in 1..DIM {
+                if bytes[offset + x - 1] == b'#' {
+                    next_state = ((offset + x) << 2 | 0) as u32;
                 }
+                map[offset + x << 2 | 3] = next_state;
+            }
+            next_state = u32::MAX;
+            map[offset + DIM - 1 << 2 | 1] = next_state;
+            for x in (0..DIM - 1).rev() {
+                if bytes[offset + x + 1] == b'#' {
+                    next_state = ((offset + x) << 2 | 2) as u32;
+                }
+                map[offset + x << 2 | 1] = next_state;
+            }
+        }
+        for x in 0..DIM {
+            let mut next_state = u32::MAX;
+            map[x << 2] = next_state;
+            for y in 1..DIM {
+                let offset = y * LINE_LEN;
+                if bytes[offset + x - LINE_LEN] == b'#' {
+                    next_state = ((offset + x) << 2 | 1) as u32;
+                }
+                map[offset + x << 2] = next_state;
+            }
+            next_state = u32::MAX;
+            map[(LINE_LEN * (DIM - 1)) + x << 2 | 2] = next_state;
+            for y in (0..DIM - 1).rev() {
+                let offset = y * LINE_LEN;
+                if bytes[offset + x + LINE_LEN] == b'#' {
+                    next_state = ((offset + x) << 2 | 3) as u32;
+                }
+                map[offset + x << 2 | 2] = next_state;
             }
         }
         map
@@ -107,8 +125,6 @@ fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -
     loop {
         let mut next_state = map[state as usize] as usize;
         // is the obstacle between the current position and the next one?
-        // let x = (state >> 2) % LINE_LEN;
-        // let y = (state >> 2) / LINE_LEN;
         match state % 4 {
             0 => {
                 if (state >> 2) % LINE_LEN == obstacle_x
@@ -175,8 +191,6 @@ enum Dir {
 }
 
 impl Dir {
-    const ALL: [Dir; 4] = [Dir::N, Dir::E, Dir::S, Dir::W];
-
     fn rotate(self) -> Dir {
         match self {
             Dir::N => Dir::E,
@@ -201,16 +215,6 @@ impl Dir {
             Dir::E => 1,
             Dir::S => 2,
             Dir::W => 3,
-        }
-    }
-
-    fn from(idx: u8) -> Dir {
-        match idx {
-            0 => Dir::N,
-            1 => Dir::E,
-            2 => Dir::S,
-            3 => Dir::W,
-            _ => unreachable!(),
         }
     }
 }
