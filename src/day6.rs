@@ -71,7 +71,7 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
         }
         if candidate_obstacles.len() == BATCHES {
             obstacles += candidate_obstacles
-                .par_iter()
+                .iter()
                 .filter(|&&obs| check_loop(&checkpoint, checkpoint_pos, checkpoint_dir, obs))
                 .count();
             candidate_obstacles.clear();
@@ -83,7 +83,7 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
 
     obstacles
         + candidate_obstacles
-            .par_iter()
+            .iter()
             .filter(|&&obs| check_loop(&checkpoint, checkpoint_pos, checkpoint_dir, obs))
             .count()
 }
