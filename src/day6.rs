@@ -115,15 +115,24 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
     }
 }
 
-fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -> bool {
+unsafe fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -> bool {
+    let mut state = *map.get_unchecked(pos << 2 | dir.index() as usize) as usize;
+    if state == u32::MAX as usize {
+        // println!("0 fast exit");
+        return false;
+    }
+    state = *map.get_unchecked(state) as usize;
+    if state == u32::MAX as usize {
+        // println!("1 fast exit");
+        return false;
+    }
     let obstacle_x = obstacle % LINE_LEN;
     let obstacle_y = obstacle / LINE_LEN;
-    let mut state = pos << 2 | dir.index() as usize;
     let mut prev_state = state;
-    let mut i = 1usize;
+    let mut i = 2usize;
 
     loop {
-        let mut next_state = map[state as usize] as usize;
+        let mut next_state = *map.get_unchecked(state) as usize;
         // is the obstacle between the current position and the next one?
         match state % 4 {
             0 => {
@@ -165,9 +174,11 @@ fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -
             _ => unreachable!(),
         }
         if next_state == u32::MAX as usize {
+            // println!("{} no cycle", i);
             return false;
         }
         if next_state == prev_state {
+            // println!("{} cycle", i);
             return true;
         }
         state = next_state;
