@@ -1,22 +1,26 @@
 pub fn part1(input: &str) -> u64 {
-    part_inner(input.as_bytes(), recurse1)
+    unsafe { part_inner(input.as_bytes(), recurse1) }
 }
 
 pub fn part2(input: &str) -> u64 {
-    part_inner(input.as_bytes(), recurse2)
+    unsafe { part_inner(input.as_bytes(), recurse2) }
 }
 
-fn part_inner<F>(mut input: &[u8], f: F) -> u64
+unsafe fn part_inner<F>(mut input: &[u8], f: F) -> u64
 where
     F: Fn(u64, &[u64]) -> bool,
 {
     let mut sum = 0;
     let mut nums = Vec::new();
     while !input.is_empty() {
-        let (target, i) = atoi_simd::parse_any_pos(input).unwrap();
-        input = &input[i + 2..];
+        let mut i = 1;
+        while *input.get_unchecked(i) != b':' {
+            i += 1;
+        }
+        let target: u64 = atoi_radix10::parse(input.get_unchecked(0..i)).unwrap();
+        input = input.get_unchecked(i + 2..);
         loop {
-            let (n, eol, next_input) = unsafe { parse_fast(input) };
+            let (n, eol, next_input) = parse_fast(input);
             nums.push(n);
             input = next_input;
             if eol {

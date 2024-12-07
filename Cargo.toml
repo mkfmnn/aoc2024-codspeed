@@ -14,6 +14,6 @@ name = "advent2024"
 harness = false
 
 [dependencies]
-atoi_simd = "0.16.0"
+atoi_radix10 = { git = "https://github.com/gilescope/atoi_radix10.git", version = "0.0.1", features = ["nightly", "simd"] }
 memchr = "2.7.4"
 regex = "1.11.1"
