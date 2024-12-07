@@ -13,8 +13,8 @@ where
     let mut sum = 0;
     let mut nums = Vec::new();
     while !input.is_empty() {
-        let (target, next_input) = unsafe { parse_target_fast(input) };
-        input = next_input;
+        let (target, i) = atoi_simd::parse_any_pos(input).unwrap();
+        input = &input[i + 2..];
         loop {
             let (n, eol, next_input) = unsafe { parse_fast(input) };
             nums.push(n);
@@ -29,20 +29,6 @@ where
         nums.clear();
     }
     sum
-}
-
-unsafe fn parse_target_fast(input: &[u8]) -> (u64, &[u8]) {
-    let mut n = *input.get_unchecked(0) as u64 - b'0' as u64;
-    let mut i = 1;
-    loop {
-        let c = *input.get_unchecked(i);
-        if c == b':' {
-            return (n, input.get_unchecked(i + 2..));
-        }
-        n *= 10;
-        n += c as u64 - b'0' as u64;
-        i += 1;
-    }
 }
 
 unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
