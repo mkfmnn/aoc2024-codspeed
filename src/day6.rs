@@ -92,7 +92,6 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
         }
         map
     };
-    // std::hint::black_box(map);
 
     let mut visited = [0u64; 267];
     let mut obstacle_count = 0;
@@ -119,8 +118,9 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
 fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -> bool {
     let obstacle_x = obstacle % LINE_LEN;
     let obstacle_y = obstacle / LINE_LEN;
-    let mut visited = [0u32; 300]; // hopefully big enough!
     let mut state = pos << 2 | dir.index() as usize;
+    let mut prev_state = state;
+    let mut i = 1usize;
 
     loop {
         let mut next_state = map[state as usize] as usize;
@@ -167,18 +167,14 @@ fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -
         if next_state == u32::MAX as usize {
             return false;
         }
-        let mut hash_idx = next_state % visited.len();
-        loop {
-            if visited[hash_idx] as usize == next_state {
-                return true;
-            } else if visited[hash_idx] == 0 {
-                visited[hash_idx] = next_state as u32;
-                break;
-            } else {
-                hash_idx = (hash_idx + 1) % visited.len();
-            }
+        if next_state == prev_state {
+            return true;
         }
         state = next_state;
+        if (i - 1) & i == 0 {
+            prev_state = state;
+        }
+        i += 1;
     }
 }
 
