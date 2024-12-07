@@ -17,7 +17,7 @@ where
         input = next_input;
         loop {
             let (n, eol, next_input) = unsafe { parse_fast(input) };
-            nums.push(n);
+            nums.push(n as u64);
             input = next_input;
             if eol {
                 break;
@@ -45,12 +45,12 @@ unsafe fn parse_target_fast(input: &[u8]) -> (u64, &[u8]) {
     }
 }
 
-unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
+unsafe fn parse_fast(input: &[u8]) -> (u32, bool, &[u8]) {
     let c1 = *input.get_unchecked(0);
     let c2 = *input.get_unchecked(1);
     if c2 == b' ' || c2 == b'\n' {
         return (
-            c1 as u64 - b'0' as u64,
+            c1 as u32 - b'0' as u32,
             c2 == b'\n',
             input.get_unchecked(2..),
         );
@@ -58,7 +58,7 @@ unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
     let c3 = *input.get_unchecked(2);
     if c3 == b' ' || c3 == b'\n' {
         return (
-            c1 as u64 * 10 + c2 as u64 - b'0' as u64 * 11,
+            c1 as u32 * 10 + c2 as u32 - b'0' as u32 * 11,
             c3 == b'\n',
             input.get_unchecked(3..),
         );
@@ -66,7 +66,7 @@ unsafe fn parse_fast(input: &[u8]) -> (u64, bool, &[u8]) {
     let c4 = *input.get_unchecked(3);
     if c4 == b' ' || c4 == b'\n' {
         return (
-            c1 as u64 * 100 + c2 as u64 * 10 + c3 as u64 - b'0' as u64 * 111,
+            c1 as u32 * 100 + c2 as u32 * 10 + c3 as u32 - b'0' as u32 * 111,
             c4 == b'\n',
             input.get_unchecked(4..),
         );
