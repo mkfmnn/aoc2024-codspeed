@@ -1,5 +1,3 @@
-use std::collections::{hash_set::Entry, HashSet};
-
 use memchr::memchr;
 
 const DIM: usize = 130;
@@ -83,7 +81,6 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
-    let mut visited_set = HashSet::<u32>::new();
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return obstacle_count;
@@ -92,28 +89,21 @@ unsafe fn part2_inner(bytes: &[u8]) -> usize {
             dir = dir.rotate();
         } else {
             if increment(&mut visited, next_pos) {
-                if check_loop(&map, pos, dir.rotate(), next_pos, &mut visited_set) {
-                    //println!("obstacle: {},{}", next_pos % LINE_LEN, next_pos / LINE_LEN);
+                if check_loop(&map, pos, dir.rotate(), next_pos) {
                     obstacle_count += 1;
                 }
-                visited_set.clear();
             }
             pos = next_pos;
-            //println!("visit: {},{}", next_pos % LINE_LEN, next_pos / LINE_LEN);
         }
     }
 }
 
-fn check_loop(
-    map: &[u32; MAP_LEN * 4],
-    pos: usize,
-    dir: Dir,
-    obstacle: usize,
-    visited: &mut HashSet<u32>,
-) -> bool {
+fn check_loop(map: &[u32; MAP_LEN * 4], pos: usize, dir: Dir, obstacle: usize) -> bool {
     let obstacle_x = obstacle % LINE_LEN;
     let obstacle_y = obstacle / LINE_LEN;
+    let mut visited = [0u32; 300]; // hopefully big enough!
     let mut state = pos << 2 | dir.index() as usize;
+
     loop {
         let mut next_state = map[state as usize] as usize;
         // is the obstacle between the current position and the next one?
@@ -161,10 +151,17 @@ fn check_loop(
         if next_state == u32::MAX as usize {
             return false;
         }
-        match visited.entry(next_state as u32) {
-            Entry::Occupied(_) => return true,
-            e @ Entry::Vacant(_) => e.insert(),
-        };
+        let mut hash_idx = next_state % visited.len();
+        loop {
+            if visited[hash_idx] as usize == next_state {
+                return true;
+            } else if visited[hash_idx] == 0 {
+                visited[hash_idx] = next_state as u32;
+                break;
+            } else {
+                hash_idx = (hash_idx + 1) % visited.len();
+            }
+        }
         state = next_state;
     }
 }
