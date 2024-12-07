@@ -1,5 +1,3 @@
-use std::hint::unreachable_unchecked;
-
 use memchr::memchr;
 
 const DIM: usize = 130;
@@ -10,8 +8,7 @@ pub fn part1(input: &str) -> usize {
 }
 
 unsafe fn part1_inner(bytes: &[u8]) -> usize {
-    let mut visited: [u8; DIM * (DIM + 1)] = [0; DIM * (DIM + 1)];
-    assert_eq!(visited.len(), bytes.len());
+    let mut visited = [0u8; DIM * (DIM + 1)];
     visited.copy_from_slice(bytes);
     let mut visited_count = 1;
     //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
@@ -33,7 +30,7 @@ unsafe fn part1_inner(bytes: &[u8]) -> usize {
             b'^' => {
                 pos = next_pos;
             }
-            _ => unreachable_unchecked(),
+            _ => std::hint::unreachable_unchecked(),
         }
     }
 }
@@ -44,60 +41,56 @@ pub fn part2(input: &str) -> usize {
 }
 
 unsafe fn part2_inner(bytes: &[u8]) -> usize {
-    let mut visited = [None; DIM * (DIM + 1)];
-    let mut obstacle_count = 0;
-    //let mut pos = bytes.iter().position(|&b| b == b'^').unwrap();
+    let mut visited = [0u8; DIM * (DIM + 1)];
+    visited.copy_from_slice(bytes);
     let mut pos = memchr(b'^', bytes).expect("no starting position found");
     let mut dir = Dir::N;
+    let mut obstacle_count = 0;
     loop {
-        if visited.get_unchecked(pos).is_none() {
-            *visited.get_unchecked_mut(pos) = Some(dir);
-        }
-        if let Some(next_pos) = dir.step(pos) {
-            if *bytes.get_unchecked(next_pos) == b'#' {
-                dir = dir.rotate();
-            } else {
-                // Before stepping, see if placing an obstacle at 'next' would send us into a loop
-                // can't place an obstacle if it's a square we already visited
-                if visited.get_unchecked(next_pos).is_none() {
-                    if check_loop(&bytes, visited.clone(), pos, dir) {
-                        obstacle_count += 1;
-                    }
-                }
-                pos = next_pos;
-            }
-        } else {
+        let Some(next_pos) = dir.step(pos) else {
             return obstacle_count;
+        };
+        let next = *visited.get_unchecked(next_pos);
+        if next == b'#' {
+            dir = dir.rotate();
+        } else {
+            // Before stepping, see if placing an obstacle at 'next' would send us into a loop
+            // can't place an obstacle if it's a square we already visited
+            if next == b'.' {
+                if check_loop(visited.clone(), pos, dir) {
+                    obstacle_count += 1;
+                }
+                *visited.get_unchecked_mut(next_pos) = dir.char();
+            }
+            pos = next_pos;
         }
     }
 }
 
-unsafe fn check_loop(
-    bytes: &[u8],
-    mut visited: [Option<Dir>; DIM * (DIM + 1)],
-    start_pos: usize,
-    start_dir: Dir,
-) -> bool {
+fn check_loop(mut visited: [u8; DIM * (DIM + 1)], start_pos: usize, start_dir: Dir) -> bool {
     let mut pos = start_pos;
     let mut dir = start_dir;
-    let obstacle = dir.step(pos).unwrap();
+    visited[dir.step(pos).unwrap()] = b'#';
     dir = dir.rotate();
     loop {
         let Some(next_pos) = dir.step(pos) else {
             return false;
         };
-        if *bytes.get_unchecked(next_pos) == b'#' || next_pos == obstacle {
-            dir = dir.rotate();
-        } else {
-            // Before stepping, see if we're stepping onto a path that
-            // we already traveled in the same direction
-            if visited.get_unchecked(next_pos) == &Some(dir) {
-                return true;
+        let next = unsafe { visited.get_unchecked_mut(next_pos) };
+        match *next {
+            b'#' => {
+                dir = dir.rotate();
             }
-            if visited.get_unchecked(pos).is_none() {
-                *visited.get_unchecked_mut(pos) = Some(dir);
+            b'.' => {
+                *next = dir.char();
+                pos = next_pos;
             }
-            pos = next_pos;
+            _ => {
+                if *next == dir.char() {
+                    return true;
+                }
+                pos = next_pos;
+            }
         }
     }
 }
@@ -126,6 +119,15 @@ impl Dir {
             Dir::E => (cur_pos % (DIM + 1) != DIM).then(|| cur_pos + 1),
             Dir::S => (cur_pos < (DIM - 1) * (DIM + 1)).then(|| cur_pos + (DIM + 1)),
             Dir::W => (cur_pos % (DIM + 1) != 0).then(|| cur_pos - 1),
+        }
+    }
+
+    fn char(self) -> u8 {
+        match self {
+            Dir::N => b'^',
+            Dir::E => b'>',
+            Dir::S => b'v',
+            Dir::W => b'<',
         }
     }
 }
