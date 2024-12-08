@@ -75,74 +75,46 @@ unsafe fn parse_fast(input: &[u8]) -> (u32, bool, &[u8]) {
     std::hint::unreachable_unchecked();
 }
 
-fn fast_logpow(n: u64) -> u64 {
-    unsafe {
-        match n {
-            0..10 => 10,
-            10..100 => 100,
-            100..1000 => 1000,
-            _ => std::hint::unreachable_unchecked(),
+macro_rules! recurse {
+    () => {
+        recurse! {recurse1, recurse1_u32, false}
+        recurse! {recurse2, recurse2_u32, true}
+    };
+    ( $fn_64:ident, $fn_32:ident, $concat:expr ) => {
+        recurse! {$fn_64, $fn_32, $concat, u64, true}
+        recurse! {$fn_32, $fn_32, $concat, u32, false}
+    };
+    ( $my_fn:ident, $fn_32:ident, $concat:expr, $type:ty, $is_64:expr) => {
+        fn $my_fn(target: $type, idx: usize, nums: &[u32]) -> bool {
+            if $is_64 && target <= u32::MAX as $type {
+                return $fn_32(target as u32, idx, nums);
+            }
+            let last = unsafe { *nums.get_unchecked(idx) } as $type;
+            if idx == 0 {
+                return last == target;
+            }
+            if target % last == 0 && $my_fn(target / last, idx - 1, nums) {
+                return true;
+            }
+            if $concat {
+                let last_mul = unsafe {
+                    match last {
+                        0..10 => 10,
+                        10..100 => 100,
+                        100..1000 => 1000,
+                        _ => std::hint::unreachable_unchecked(),
+                    }
+                };
+                if target % last_mul == last && $my_fn(target / last_mul, idx - 1, nums) {
+                    return true;
+                }
+            }
+            target > last && $my_fn(target - last, idx - 1, nums)
         }
-    }
+    };
 }
 
-fn recurse1(target: u64, idx: usize, nums: &[u32]) -> bool {
-    if target <= u32::MAX as u64 {
-        return recurse1_u32(target as u32, idx, nums);
-    }
-    let last = unsafe { *nums.get_unchecked(idx) } as u64;
-    if idx == 0 {
-        return last == target;
-    }
-    if target % last == 0 && recurse1(target / last, idx - 1, nums) {
-        return true;
-    }
-    target > last && recurse1(target - last, idx - 1, nums)
-}
-
-fn recurse1_u32(target: u32, idx: usize, nums: &[u32]) -> bool {
-    let last = unsafe { *nums.get_unchecked(idx) };
-    if idx == 0 {
-        return last == target;
-    }
-    if target % last == 0 && recurse1_u32(target / last, idx - 1, nums) {
-        return true;
-    }
-    target > last && recurse1_u32(target - last, idx - 1, nums)
-}
-
-fn recurse2(target: u64, idx: usize, nums: &[u32]) -> bool {
-    if target <= u32::MAX as u64 {
-        return recurse2_u32(target as u32, idx, nums);
-    }
-    let last = unsafe { *nums.get_unchecked(idx) } as u64;
-    if idx == 0 {
-        return last == target;
-    }
-    if target % last == 0 && recurse2(target / last, idx - 1, nums) {
-        return true;
-    }
-    let last_mul = fast_logpow(last);
-    if target % last_mul == last && recurse2(target / last_mul, idx - 1, nums) {
-        return true;
-    }
-    target > last && recurse2(target - last, idx - 1, nums)
-}
-
-fn recurse2_u32(target: u32, idx: usize, nums: &[u32]) -> bool {
-    let last = unsafe { *nums.get_unchecked(idx) };
-    if idx == 0 {
-        return last == target;
-    }
-    if target % last == 0 && recurse2_u32(target / last, idx - 1, nums) {
-        return true;
-    }
-    let last_mul = fast_logpow(last as u64) as u32;
-    if target % last_mul == last && recurse2_u32(target / last_mul, idx - 1, nums) {
-        return true;
-    }
-    target > last && recurse2_u32(target - last, idx - 1, nums)
-}
+recurse! {}
 
 #[cfg(test)]
 mod tests {
