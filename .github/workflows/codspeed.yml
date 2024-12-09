@@ -14,7 +14,7 @@ jobs:
     name: Run benchmarks
     runs-on: ubuntu-latest
     env:
-      DAY: 8
+      DAY: 9
       RUSTFLAGS: '-C target-cpu=native'
     steps:
       - uses: actions/checkout@v4
