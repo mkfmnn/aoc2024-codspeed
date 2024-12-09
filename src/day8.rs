@@ -1,3 +1,5 @@
+use std::simd::{cmp::{SimdPartialEq, SimdPartialOrd}, num::SimdUint, u8x32};
+
 const DIM: usize = 50;
 const LINE_LEN: usize = DIM + 1;
 const MAP_LEN: usize = DIM * LINE_LEN;
@@ -27,17 +29,44 @@ pub fn part2(input: &str) -> usize {
 }
 
 fn byte_offset_to_coord(i: usize) -> (i8, i8) {
-    ((i / LINE_LEN) as i8, (i % LINE_LEN) as i8)
+    ((i % LINE_LEN) as i8, (i / LINE_LEN) as i8)
 }
 
 fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
     assert_eq!(bytes.len(), MAP_LEN);
     let mut stations = [[(0i8, 0i8); 4]; 64];
     let mut station_count = [0usize; 64];
-    for (i, &c) in bytes.iter().enumerate() {
+    let (prefix, batch, suffix) = bytes.as_simd::<32>();
+    for (i, &c) in prefix.iter().enumerate() {
         let s = LUT[c as usize] as usize;
         if s != 255 {
             stations[s][station_count[s]] = byte_offset_to_coord(i);
+            station_count[s] += 1;
+        }
+    }
+    let mut offset = prefix.len();
+    for c in batch {
+        let d = c.simd_gt(u8x32::splat(b'9')).select(u8x32::splat(b'A' - 1 - 10), u8x32::splat(b'0' - 1));
+        let d = c.simd_gt(u8x32::splat(b'Z')).select(u8x32::splat(b'a' - 1 - 36), d);
+        let c = c.saturating_sub(d);
+        let mut m = c.simd_ne(u8x32::splat(0)).to_bitmask();
+        let a = c.to_array();
+        while m != 0 {
+            let t = m.trailing_zeros() as usize;
+            let s = a[t] as usize;
+            let i = offset + t;
+
+            stations[s][station_count[s]] = byte_offset_to_coord(i);
+            station_count[s] += 1;
+
+            m &= !(1 << t);
+        }
+        offset += 32;
+    }
+    for (i, &c) in suffix.iter().enumerate() {
+        let s = LUT[c as usize] as usize;
+        if s != 255 {
+            stations[s][station_count[s]] = byte_offset_to_coord(offset + i);
             station_count[s] += 1;
         }
     }
