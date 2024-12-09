@@ -91,7 +91,7 @@ unsafe fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
         for (i, &c) in suffix.iter().enumerate() {
             let s = LUT[c as usize] as usize;
             if s != 255 {
-                set_station(stations, &mut station_count, s, i);
+                set_station(stations, &mut station_count, s, offset + i);
             }
         }
     }
