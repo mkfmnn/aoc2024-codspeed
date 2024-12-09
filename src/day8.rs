@@ -25,15 +25,15 @@ const LUT: [u8; 256] = {
 };
 
 pub fn part1(input: &str) -> usize {
-    inner::<false>(input.as_bytes())
+    unsafe { inner::<false>(input.as_bytes()) }
 }
 
 pub fn part2(input: &str) -> usize {
-    inner::<true>(input.as_bytes())
+    unsafe { inner::<true>(input.as_bytes()) }
 }
 
 #[inline(always)]
-fn set_station(
+unsafe fn set_station(
     stations: &mut [i8; 512],
     station_count: &mut [usize; 64],
     station: usize,
@@ -44,15 +44,15 @@ fn set_station(
         (bytes_offset % LINE_LEN) as i8,
         (bytes_offset / LINE_LEN) as i8,
     );
-    let c = station_count[station];
-    stations[(c << 7) + station] = x;
-    stations[(c << 7) + 64 + station] = y;
-    station_count[station] += 1;
+    let c = *station_count.get_unchecked(station);
+    *stations.get_unchecked_mut((c << 7) + station) = x;
+    *stations.get_unchecked_mut((c << 7) + 64 + station) = y;
+    *station_count.get_unchecked_mut(station) += 1;
 }
 
 type U8xRead = std::simd::u8x32;
 
-fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
+unsafe fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
     assert_eq!(bytes.len(), MAP_LEN);
     let mut stations_simd: [i8x64; 8] = [i8x64::splat(101); 8];
     let mut station_count = [0usize; 64];
@@ -92,7 +92,6 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
             let s = LUT[c as usize] as usize;
             if s != 255 {
                 set_station(stations, &mut station_count, s, i);
-                station_count[s] += 1;
             }
         }
     }
@@ -103,10 +102,10 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
         let max = i8x64::splat(DIM as i8);
         for i in 0..4 {
             for j in i + 1..4 {
-                let ax = stations_simd[i << 1];
-                let ay = stations_simd[(i << 1) + 1];
-                let bx = stations_simd[j << 1];
-                let by = stations_simd[(j << 1) + 1];
+                let ax = *stations_simd.get_unchecked(i << 1);
+                let ay = *stations_simd.get_unchecked((i << 1) + 1);
+                let bx = *stations_simd.get_unchecked(j << 1);
+                let by = *stations_simd.get_unchecked((j << 1) + 1);
                 let dx = bx - ax;
                 let dy = by - ay;
                 let n1x = bx + dx;
@@ -117,7 +116,7 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
                 let nodes = (n1x.to_array(), n1y.to_array());
                 while m != 0 {
                     let t = m.trailing_zeros() as usize;
-                    antinodes[nodes.0[t] as usize] |= 1 << nodes.1[t];
+                    antinodes[*nodes.0.get_unchecked(t) as usize] |= 1 << *nodes.1.get_unchecked(t);
 
                     m &= !(1 << t);
                 }
@@ -129,7 +128,7 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
                 let nodes = (n2x.to_array(), n2y.to_array());
                 while m != 0 {
                     let t = m.trailing_zeros() as usize;
-                    antinodes[nodes.0[t] as usize] |= 1 << nodes.1[t];
+                    antinodes[*nodes.0.get_unchecked(t) as usize] |= 1 << *nodes.1.get_unchecked(t);
 
                     m &= !(1 << t);
                 }
@@ -138,17 +137,24 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
     } else {
         let stations: &[i8; 512] = unsafe { std::mem::transmute(&stations_simd) };
         for s in 1..=62 {
-            for i in 0..station_count[s] {
-                for j in 0..station_count[s] {
+            let sc = *station_count.get_unchecked(s);
+            for i in 0..sc {
+                for j in 0..sc {
                     if i == j {
                         continue;
                     }
-                    let a = (stations[(i << 7) + s], stations[(i << 7) + 64 + s]);
-                    let b = (stations[(j << 7) + s], stations[(j << 7) + 64 + s]);
+                    let a = (
+                        *stations.get_unchecked((i << 7) + s),
+                        *stations.get_unchecked((i << 7) + 64 + s),
+                    );
+                    let b = (
+                        *stations.get_unchecked((j << 7) + s),
+                        *stations.get_unchecked((j << 7) + 64 + s),
+                    );
                     let delta = (b.0 - a.0, b.1 - a.1);
                     let mut antinode = b;
                     loop {
-                        antinodes[antinode.0 as usize] |= 1 << antinode.1;
+                        *antinodes.get_unchecked_mut(antinode.0 as usize) |= 1 << antinode.1;
                         antinode = (antinode.0 + delta.0, antinode.1 + delta.1);
                         if !(antinode.0 >= 0
                             && antinode.0 < DIM as i8
@@ -160,7 +166,7 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
                     }
                     antinode = a;
                     loop {
-                        antinodes[antinode.0 as usize] |= 1 << antinode.1;
+                        *antinodes.get_unchecked_mut(antinode.0 as usize) |= 1 << antinode.1;
                         antinode = (antinode.0 - delta.0, antinode.1 - delta.1);
                         if !(antinode.0 >= 0
                             && antinode.0 < DIM as i8
@@ -168,7 +174,7 @@ fn inner<const REPEAT: bool>(bytes: &[u8]) -> usize {
                             && antinode.1 < DIM as i8)
                         {
                             break;
-                        };
+                        }
                     }
                 }
             }
