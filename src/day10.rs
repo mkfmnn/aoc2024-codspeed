@@ -12,57 +12,60 @@ fn part1_inner(bytes: &[u8]) -> usize {
     for i in 0..bytes.len() {
         if bytes[i] == b'0' {
             let mut visited = [0u64; 64];
-            sum += part1_recurse(bytes, &mut visited, line, i, b'0');
+            sum += part1_recurse(bytes, &mut visited, line, i);
         }
     }
     sum
 }
 
 #[inline(always)]
-fn part1_recurse_check(
-    bytes: &[u8],
-    visited: &mut [u64],
-    line: usize,
-    newpos: usize,
-    char: u8,
-) -> usize {
+fn part1_recurse_check(bytes: &[u8], newpos: usize, char: u8, s: &mut ArrayVec<(u16, u8), 30>) {
     if unsafe { *bytes.get_unchecked(newpos) } != char {
-        return 0;
+        return;
     }
-    part1_recurse(bytes, visited, line, newpos, char)
+    s.push((newpos as u16, char));
 }
 
-fn part1_recurse(bytes: &[u8], visited: &mut [u64], line: usize, pos: usize, char: u8) -> usize {
-    let (v1, v2) = (pos / 64, pos % 64);
+fn part1_recurse(bytes: &[u8], visited: &mut [u64], line: usize, startpos: usize) -> usize {
+    let mut s = ArrayVec::<(u16, u8), 30>::new();
     unsafe {
-        std::hint::assert_unchecked(v1 < visited.len());
+        s.push_unchecked((startpos as u16, b'0'));
     }
-    if visited[v1] & (1 << v2) != 0 {
-        return 0;
-    }
-    visited[v1] |= 1 << v2;
-    if char == b'9' {
-        return 1;
-    }
-    let nextc = char + 1;
     let mut sum = 0;
-    if pos < line {
-        if pos >= 1 {
-            sum += part1_recurse_check(bytes, visited, line, pos - 1, nextc);
+    while !s.is_empty() {
+        let (pos, char) = s.pop().unwrap();
+        let pos = pos as usize;
+        let (v1, v2) = (pos / 64, pos % 64);
+        unsafe {
+            std::hint::assert_unchecked(v1 < visited.len());
         }
-        sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
-        sum += part1_recurse_check(bytes, visited, line, pos + line, nextc);
-    } else if pos + line >= bytes.len() {
-        if pos + 1 < bytes.len() {
-            sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
+        if visited[v1] & (1 << v2) != 0 {
+            continue;
         }
-        sum += part1_recurse_check(bytes, visited, line, pos - 1, nextc);
-        sum += part1_recurse_check(bytes, visited, line, pos - line, nextc);
-    } else {
-        sum += part1_recurse_check(bytes, visited, line, pos - line, nextc);
-        sum += part1_recurse_check(bytes, visited, line, pos - 1, nextc);
-        sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
-        sum += part1_recurse_check(bytes, visited, line, pos + line, nextc);
+        visited[v1] |= 1 << v2;
+        if char == b'9' {
+            sum += 1;
+            continue;
+        }
+        let nextc = char + 1;
+        if pos < line {
+            if pos >= 1 {
+                part1_recurse_check(bytes, pos - 1, nextc, &mut s);
+            }
+            part1_recurse_check(bytes, pos + 1, nextc, &mut s);
+            part1_recurse_check(bytes, pos + line, nextc, &mut s);
+        } else if pos + line >= bytes.len() {
+            if pos + 1 < bytes.len() {
+                part1_recurse_check(bytes, pos + 1, nextc, &mut s);
+            }
+            part1_recurse_check(bytes, pos - 1, nextc, &mut s);
+            part1_recurse_check(bytes, pos - line, nextc, &mut s);
+        } else {
+            part1_recurse_check(bytes, pos - line, nextc, &mut s);
+            part1_recurse_check(bytes, pos - 1, nextc, &mut s);
+            part1_recurse_check(bytes, pos + 1, nextc, &mut s);
+            part1_recurse_check(bytes, pos + line, nextc, &mut s);
+        }
     }
     sum
 }
@@ -90,7 +93,7 @@ fn part2_recurse_check(
     newpos: usize,
     char: u8,
     sum: &mut usize,
-    s: &mut ArrayVec<(u16, u8), 32>,
+    s: &mut ArrayVec<(u16, u8), 30>,
 ) {
     if unsafe { *bytes.get_unchecked(newpos) } != char {
         return;
@@ -105,7 +108,7 @@ fn part2_recurse_check(
 }
 
 fn part2_recurse(bytes: &[u8], line: usize, startpos: usize) -> usize {
-    let mut s = ArrayVec::<(u16, u8), 32>::new();
+    let mut s = ArrayVec::<(u16, u8), 30>::new();
     unsafe {
         s.push_unchecked((startpos as u16, b'0'));
     }
@@ -114,7 +117,6 @@ fn part2_recurse(bytes: &[u8], line: usize, startpos: usize) -> usize {
         let (pos, char) = s.pop().unwrap();
         let pos = pos as usize;
         let nextc = char + 1;
-        // push all adjacent onto the stack
         if pos < line {
             if pos >= 1 {
                 part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s);
