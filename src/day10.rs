@@ -98,13 +98,13 @@ fn part2_recurse_check(
     if unsafe { *bytes.get_unchecked(newpos) } != char {
         return 0;
     }
+    if char == b'9' {
+        return 1;
+    }
     part2_recurse(bytes, line, newpos, char)
 }
 
 fn part2_recurse(bytes: &[u8], line: usize, pos: usize, char: u8) -> usize {
-    if char == b'9' {
-        return 1;
-    }
     let nextc = char + 1;
     let mut sum = 0;
     if pos < line {
