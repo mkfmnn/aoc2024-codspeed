@@ -1,7 +1,7 @@
 use std::{cmp::Reverse, collections::BinaryHeap};
 
 pub fn part1(input: &str) -> usize {
-    part1_inner(input.as_bytes())
+    unsafe { part1_inner(input.as_bytes()) }
 }
 
 unsafe fn translate(mut input: &[u8], output: *mut [u8; 19999]) {
@@ -14,7 +14,7 @@ unsafe fn translate(mut input: &[u8], output: *mut [u8; 19999]) {
     }
 }
 
-fn part1_inner(bytes: &[u8]) -> usize {
+unsafe fn part1_inner(bytes: &[u8]) -> usize {
     let mut buf = std::mem::MaybeUninit::<[u8; 19999]>::uninit();
     unsafe { translate(bytes, buf.as_mut_ptr()); }
     let bytes = unsafe { buf.assume_init_mut() };
@@ -27,18 +27,18 @@ fn part1_inner(bytes: &[u8]) -> usize {
     // alternate reading from the front and from the back until one pointer would cross the other
     while i <= j {
         let front_id = i / 2;
-        let len = (bytes[i]) as usize;
+        let len = *bytes.get_unchecked(i) as usize;
         checksum += front_id * len * (2 * offset + len - 1);
         offset += len;
         i += 1;
-        let mut free_len = (bytes[i]) as usize;
+        let mut free_len = *bytes.get_unchecked(i) as usize;
         while free_len > 0 || j <= i {
             let used = if back_remaining == 0 {
                 if j <= i {
                     break;
                 }
                 back_id = j / 2;
-                back_remaining = (bytes[j]) as usize;
+                back_remaining = *bytes.get_unchecked(j) as usize;
                 debug_assert!(back_remaining > 0);
                 j -= 2;
                 usize::min(free_len, back_remaining)
