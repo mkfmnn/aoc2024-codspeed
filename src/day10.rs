@@ -24,7 +24,7 @@ fn part1_recurse_check(
     newpos: usize,
     char: u8,
 ) -> usize {
-    if bytes.get(newpos).is_none_or(|&c| c != char) {
+    if unsafe { *bytes.get_unchecked(newpos) } != char {
         return 0;
     }
     part1_recurse(bytes, visited, line, newpos, char)
@@ -50,10 +50,24 @@ fn part1_recurse(
     }
     let nextc = char + 1;
     let mut sum = 0;
-    sum += part1_recurse_check(bytes, visited, line, pos.wrapping_sub(line), nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos.wrapping_sub(1), nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos + line, nextc);
+    {
+        let newpos = pos.wrapping_sub(line);
+        if newpos < bytes.len() {
+            sum += part1_recurse_check(bytes, visited, line, newpos, nextc)
+            + part1_recurse_check(bytes, visited, line, pos - 1, nextc);
+        } else if pos > 0 {
+            sum += part1_recurse_check(bytes, visited, line, pos - 1, nextc);
+        }
+    }
+    {
+        let newpos = pos + line;
+        if newpos < bytes.len() {
+            sum += part1_recurse_check(bytes, visited, line, newpos, nextc)
+            + part1_recurse_check(bytes, visited, line, pos + 1, nextc);
+        } else if pos + 1 < bytes.len() {
+            sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
+        }
+    }
     sum
 }
 
@@ -81,7 +95,7 @@ fn part2_recurse_check(
     newpos: usize,
     char: u8,
 ) -> usize {
-    if bytes.get(newpos).is_none_or(|&c| c != char) {
+    if unsafe { *bytes.get_unchecked(newpos) } != char {
         return 0;
     }
     part2_recurse(bytes, line, newpos, char)
@@ -93,10 +107,24 @@ fn part2_recurse(bytes: &[u8], line: usize, pos: usize, char: u8) -> usize {
     }
     let nextc = char + 1;
     let mut sum = 0;
-    sum += part2_recurse_check(bytes, line, pos.wrapping_sub(line), nextc);
-    sum += part2_recurse_check(bytes, line, pos.wrapping_sub(1), nextc);
-    sum += part2_recurse_check(bytes, line, pos + 1, nextc);
-    sum += part2_recurse_check(bytes, line, pos + line, nextc);
+    {
+        let newpos = pos.wrapping_sub(line);
+        if newpos < bytes.len() {
+            sum += part2_recurse_check(bytes, line, newpos, nextc)
+            + part2_recurse_check(bytes, line, pos - 1, nextc);
+        } else if pos > 0 {
+            sum += part2_recurse_check(bytes, line, pos - 1, nextc);
+        }
+    }
+    {
+        let newpos = pos + line;
+        if newpos < bytes.len() {
+            sum += part2_recurse_check(bytes, line, newpos, nextc)
+            + part2_recurse_check(bytes, line, pos + 1, nextc);
+        } else if pos + 1 < bytes.len() {
+            sum += part2_recurse_check(bytes, line, pos + 1, nextc);
+        }
+    }
     sum
 }
 
