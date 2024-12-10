@@ -100,7 +100,7 @@ fn part2_inner(mut bytes: &[u8]) -> usize {
             continue;
         }
         // if no block in free lists is big enough, scan for more
-        while end_idx <= free_idx {
+        while end_idx >= free_idx {
             offset += (bytes[free_idx] - b'0') as usize;
             free_idx += 1;
             let mut free_start = offset;
