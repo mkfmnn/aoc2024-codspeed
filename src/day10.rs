@@ -19,7 +19,7 @@ fn part1_inner(bytes: &[u8]) -> usize {
 #[inline(always)]
 fn part1_recurse_check(
     bytes: &[u8],
-    visited: &mut [u64; 64],
+    visited: &mut [u64],
     line: usize,
     newpos: usize,
     char: u8,
@@ -32,12 +32,15 @@ fn part1_recurse_check(
 
 fn part1_recurse(
     bytes: &[u8],
-    visited: &mut [u64; 64],
+    visited: &mut [u64],
     line: usize,
     pos: usize,
     char: u8,
 ) -> usize {
     let (v1, v2) = (pos / 64, pos % 64);
+    unsafe {
+        std::hint::assert_unchecked(v1 < visited.len());
+    }
     if visited[v1] & (1 << v2) != 0 {
         return 0;
     }
@@ -71,36 +74,29 @@ fn part2_inner(bytes: &[u8]) -> usize {
     sum
 }
 
+#[inline(always)]
+fn part2_recurse_check(
+    bytes: &[u8],
+    line: usize,
+    newpos: usize,
+    char: u8,
+) -> usize {
+    if bytes.get(newpos).is_none_or(|&c| c != char) {
+        return 0;
+    }
+    part2_recurse(bytes, line, newpos, char)
+}
+
 fn part2_recurse(bytes: &[u8], line: usize, pos: usize, char: u8) -> usize {
     if char == b'9' {
         return 1;
     }
     let nextc = char + 1;
     let mut sum = 0;
-    if pos >= line {
-        let next = pos - line;
-        if bytes[next] == nextc {
-            sum += part2_recurse(bytes, line, next, nextc);
-        }
-    }
-    if pos >= 1 {
-        let next = pos - 1;
-        if bytes[next] == nextc {
-            sum += part2_recurse(bytes, line, next, nextc);
-        }
-    }
-    if pos + 1 < bytes.len() {
-        let next = pos + 1;
-        if bytes[next] == nextc {
-            sum += part2_recurse(bytes, line, next, nextc);
-        }
-    }
-    if pos + line < bytes.len() {
-        let next = pos + line;
-        if bytes[next] == nextc {
-            sum += part2_recurse(bytes, line, next, nextc);
-        }
-    }
+    sum += part2_recurse_check(bytes, line, pos.wrapping_sub(line), nextc);
+    sum += part2_recurse_check(bytes, line, pos.wrapping_sub(1), nextc);
+    sum += part2_recurse_check(bytes, line, pos + 1, nextc);
+    sum += part2_recurse_check(bytes, line, pos + line, nextc);
     sum
 }
 
