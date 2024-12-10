@@ -10,7 +10,7 @@ fn part1_inner(bytes: &[u8]) -> usize {
     for i in 0..bytes.len() {
         if bytes[i] == b'0' {
             let mut visited = [0u64; 64];
-            sum += part1_recurse(bytes, &mut visited, line as isize, i, b'0');
+            sum += part1_recurse(bytes, &mut visited, line, i, b'0');
         }
     }
     sum
@@ -20,23 +20,20 @@ fn part1_inner(bytes: &[u8]) -> usize {
 fn part1_recurse_check(
     bytes: &[u8],
     visited: &mut [u64; 64],
-    line: isize,
-    pos: usize,
-    offset: isize,
+    line: usize,
+    newpos: usize,
     char: u8,
 ) -> usize {
-    let newpos = (pos as isize + offset) as usize;
     if bytes.get(newpos).is_none_or(|&c| c != char) {
         return 0;
     }
     part1_recurse(bytes, visited, line, newpos, char)
 }
 
-
 fn part1_recurse(
     bytes: &[u8],
     visited: &mut [u64; 64],
-    line: isize,
+    line: usize,
     pos: usize,
     char: u8,
 ) -> usize {
@@ -50,10 +47,10 @@ fn part1_recurse(
     }
     let nextc = char + 1;
     let mut sum = 0;
-    sum += part1_recurse_check(bytes, visited, line, pos, -line, nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos, -1, nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos, 1, nextc);
-    sum += part1_recurse_check(bytes, visited, line, pos, line, nextc);
+    sum += part1_recurse_check(bytes, visited, line, pos.wrapping_sub(line), nextc);
+    sum += part1_recurse_check(bytes, visited, line, pos.wrapping_sub(1), nextc);
+    sum += part1_recurse_check(bytes, visited, line, pos + 1, nextc);
+    sum += part1_recurse_check(bytes, visited, line, pos + line, nextc);
     sum
 }
 
