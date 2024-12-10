@@ -1,3 +1,5 @@
+use arrayvec::ArrayVec;
+
 pub fn part1(input: &str) -> usize {
     part1_inner(input.as_bytes())
 }
@@ -88,8 +90,7 @@ fn part2_recurse_check(
     newpos: usize,
     char: u8,
     sum: &mut usize,
-    s: &mut [(u16, u8); 32],
-    sl: &mut usize,
+    s: &mut ArrayVec<(u16, u8), 32>,
 ) {
     if unsafe { *bytes.get_unchecked(newpos) } != char {
         return;
@@ -99,39 +100,38 @@ fn part2_recurse_check(
         return;
     }
     unsafe {
-        *s.get_unchecked_mut(*sl) = (newpos as u16, char);
+        s.push_unchecked((newpos as u16, char));
     }
-    *sl += 1;
 }
 
 fn part2_recurse(bytes: &[u8], line: usize, startpos: usize) -> usize {
-    let mut s: [(u16, u8); 32] = Default::default();
-    s[0] = (startpos as u16, b'0');
-    let mut sl = 1;
+    let mut s = ArrayVec::<(u16, u8), 32>::new();
+    unsafe {
+        s.push_unchecked((startpos as u16, b'0'));
+    }
     let mut sum = 0;
-    while sl != 0 {
-        sl -= 1;
-        let (pos, char) = unsafe { *s.get_unchecked(sl) };
+    while !s.is_empty() {
+        let (pos, char) = s.pop().unwrap();
         let pos = pos as usize;
         let nextc = char + 1;
         // push all adjacent onto the stack
         if pos < line {
             if pos >= 1 {
-                part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s, &mut sl);
+                part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s);
             }
-            part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s, &mut sl);
-            part2_recurse_check(bytes, pos + line, nextc, &mut sum, &mut s, &mut sl);
+            part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s);
+            part2_recurse_check(bytes, pos + line, nextc, &mut sum, &mut s);
         } else if pos + line >= bytes.len() {
             if pos + 1 < bytes.len() {
-                part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s, &mut sl);
+                part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s);
             }
-            part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s, &mut sl);
-            part2_recurse_check(bytes, pos - line, nextc, &mut sum, &mut s, &mut sl);
+            part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s);
+            part2_recurse_check(bytes, pos - line, nextc, &mut sum, &mut s);
         } else {
-            part2_recurse_check(bytes, pos - line, nextc, &mut sum, &mut s, &mut sl);
-            part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s, &mut sl);
-            part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s, &mut sl);
-            part2_recurse_check(bytes, pos + line, nextc, &mut sum, &mut s, &mut sl);
+            part2_recurse_check(bytes, pos - line, nextc, &mut sum, &mut s);
+            part2_recurse_check(bytes, pos - 1, nextc, &mut sum, &mut s);
+            part2_recurse_check(bytes, pos + 1, nextc, &mut sum, &mut s);
+            part2_recurse_check(bytes, pos + line, nextc, &mut sum, &mut s);
         }
     }
     sum
