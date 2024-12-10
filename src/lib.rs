@@ -1,4 +1,5 @@
 #![feature(array_chunks)]
+#![feature(array_ptr_get)]
 #![feature(array_windows)]
 #![feature(portable_simd)]
 
