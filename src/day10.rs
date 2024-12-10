@@ -98,7 +98,9 @@ fn part2_recurse_check(
         *sum += 1;
         return;
     }
-    s[*sl] = (newpos as u16, char);
+    unsafe {
+        *s.get_unchecked_mut(*sl) = (newpos as u16, char);
+    }
     *sl += 1;
 }
 
@@ -109,7 +111,7 @@ fn part2_recurse(bytes: &[u8], line: usize, startpos: usize) -> usize {
     let mut sum = 0;
     while sl != 0 {
         sl -= 1;
-        let (pos, char) = s[sl];
+        let (pos, char) = unsafe { *s.get_unchecked(sl) };
         let pos = pos as usize;
         let nextc = char + 1;
         // push all adjacent onto the stack
