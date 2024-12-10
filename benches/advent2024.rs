@@ -78,8 +78,12 @@ fn day9(c: &mut Criterion) {
 fn day10(c: &mut Criterion) {
     let input = include_str!("../data/input10.txt");
     let mut group = c.benchmark_group("day10");
-    group.bench_function("day10 part1", |b| b.iter(|| day10::part1(black_box(&input))));
-    group.bench_function("day10 part2", |b| b.iter(|| day10::part2(black_box(&input))));
+    group.bench_function("day10 part1", |b| {
+        b.iter(|| day10::part1(black_box(&input)))
+    });
+    group.bench_function("day10 part2", |b| {
+        b.iter(|| day10::part2(black_box(&input)))
+    });
     group.finish();
 }
 

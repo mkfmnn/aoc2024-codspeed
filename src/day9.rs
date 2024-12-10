@@ -5,8 +5,8 @@ pub fn part1(input: &str) -> usize {
 }
 
 unsafe fn translate(mut input: &[u8], output: *mut [u8; 19999]) {
-    if input[input.len()-1] == b'\n' {
-        input = &input[0..input.len()-1];
+    if input[input.len() - 1] == b'\n' {
+        input = &input[0..input.len() - 1];
     }
     assert_eq!(input.len(), 19999);
     for i in 0..input.len() {
@@ -16,7 +16,9 @@ unsafe fn translate(mut input: &[u8], output: *mut [u8; 19999]) {
 
 unsafe fn part1_inner(bytes: &[u8]) -> usize {
     let mut buf = std::mem::MaybeUninit::<[u8; 19999]>::uninit();
-    unsafe { translate(bytes, buf.as_mut_ptr()); }
+    unsafe {
+        translate(bytes, buf.as_mut_ptr());
+    }
     let bytes = unsafe { buf.assume_init_mut() };
     let mut i = 0usize;
     let mut j = bytes.len() - 1;
@@ -63,7 +65,9 @@ pub fn part2(input: &str) -> usize {
 
 fn part2_inner(bytes: &[u8]) -> usize {
     let mut buf = std::mem::MaybeUninit::<[u8; 19999]>::uninit();
-    unsafe { translate(bytes, buf.as_mut_ptr()); }
+    unsafe {
+        translate(bytes, buf.as_mut_ptr());
+    }
     let bytes = unsafe { buf.assume_init_mut() };
     let mut free_blocks: [BinaryHeap<Reverse<usize>>; 10] =
         core::array::from_fn(|_| BinaryHeap::with_capacity(1000));
