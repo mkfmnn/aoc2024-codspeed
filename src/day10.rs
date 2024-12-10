@@ -23,7 +23,9 @@ fn part1_recurse_check(bytes: &[u8], newpos: usize, char: u8, s: &mut ArrayVec<(
     if unsafe { *bytes.get_unchecked(newpos) } != char {
         return;
     }
-    s.push((newpos as u16, char));
+    unsafe {
+        s.push_unchecked((newpos as u16, char));
+    }
 }
 
 fn part1_recurse(bytes: &[u8], visited: &mut [u64], line: usize, startpos: usize) -> usize {
