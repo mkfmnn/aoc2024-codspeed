@@ -1,5 +1,31 @@
 use std::collections::HashMap;
 
+const T: usize = 10_000_000;
+
+static LUT1: [u16; T] = unsafe {
+    let mut t = [0u16; T];
+    let b = include_bytes!("../lut/d11p1.bin");
+    assert!(b.len() == T * 2);
+    std::ptr::copy(
+        b.as_ptr(),
+        std::mem::transmute::<_, &mut [u8; T * 2]>(&mut t).as_mut_ptr(),
+        T * 2,
+    );
+    t
+};
+
+static LUT2: [usize; T] = unsafe {
+    let mut t = [0usize; T];
+    let b = include_bytes!("../lut/d11p2.bin");
+    assert!(b.len() == T * 8);
+    std::ptr::copy(
+        b.as_ptr(),
+        std::mem::transmute::<_, &mut [u8; T * 8]>(&mut t).as_mut_ptr(),
+        T * 8,
+    );
+    t
+};
+
 pub fn parse(input: &str) -> impl Iterator<Item = usize> + use<'_> {
     input
         .split_ascii_whitespace()
@@ -7,16 +33,28 @@ pub fn parse(input: &str) -> impl Iterator<Item = usize> + use<'_> {
 }
 
 pub fn part1(input: &str) -> usize {
-    let mut cache = HashMap::<(usize, usize), usize>::with_capacity(1_000);
+    let mut cache = HashMap::<(usize, usize), usize>::new();
     parse(input)
-        .map(|n| expand::<100_000>(n, 25, &mut cache))
+        .map(|n| {
+            if n < T {
+                LUT1[n] as usize
+            } else {
+                expand::<100_000>(n, 25, &mut cache)
+            }
+        })
         .sum()
 }
 
 pub fn part2(input: &str) -> usize {
-    let mut cache = HashMap::<(usize, usize), usize>::with_capacity(100_000);
+    let mut cache = HashMap::<(usize, usize), usize>::new();
     parse(input)
-        .map(|n| expand::<100_000>(n, 75, &mut cache))
+        .map(|n| {
+            if n < T {
+                LUT2[n] as usize
+            } else {
+                expand::<100_000>(n, 75, &mut cache)
+            }
+        })
         .sum()
 }
 

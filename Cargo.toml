@@ -15,5 +15,6 @@ harness = false
 
 [dependencies]
 arrayvec = "0.7.6"
+bytemuck = "1.20.0"
 memchr = "2.7.4"
 regex = "1.11.1"
