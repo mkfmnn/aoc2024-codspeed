@@ -1,3 +1,5 @@
+use std::simd::{mask8x64, u8x64};
+
 use arrayvec::ArrayVec;
 
 pub fn part1(input: &str) -> usize {
@@ -141,6 +143,31 @@ fn part2_recurse(bytes: &[u8], line: usize, startpos: usize) -> usize {
     sum
 }
 
+pub fn simd(input: &str) -> usize {
+    unsafe { simd_inner(input.as_bytes()) }
+}
+
+unsafe fn simd_inner(bytes: &[u8]) -> usize {
+    let dim: usize = (bytes.len() as f32).sqrt().to_int_unchecked();
+    assert!(dim < 64);
+    let bytes_ptr = bytes.as_ptr();
+    let mut map = ArrayVec::<u8x64, 64>::new();
+    let load_mask = mask8x64::from_bitmask((1 << dim) - 1);
+    //println!("{load_mask:?}");
+
+    for i in 0..dim {
+        map.push(u8x64::load_select_ptr(
+            bytes_ptr.add(i * (dim + 1)),
+            load_mask,
+            u8x64::splat(0),
+        ));
+    }
+    //println!("{map:?}");
+
+    std::hint::black_box(&map);
+    0
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,5 +181,10 @@ mod tests {
     #[test]
     fn test_part2() {
         assert_eq!(1436, part2(INPUT));
+    }
+
+    #[test]
+    fn test_simd() {
+        assert_eq!(0, simd(INPUT));
     }
 }

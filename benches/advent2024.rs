@@ -84,6 +84,7 @@ fn day10(c: &mut Criterion) {
     group.bench_function("day10 part2", |b| {
         b.iter(|| day10::part2(black_box(&input)))
     });
+    group.bench_function("day10 test", |b| b.iter(|| day10::simd(black_box(&input))));
     group.finish();
 }
 
