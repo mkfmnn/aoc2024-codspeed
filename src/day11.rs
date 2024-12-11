@@ -7,38 +7,24 @@ pub fn parse(input: &str) -> impl Iterator<Item = usize> + use<'_> {
 }
 
 pub fn part1(input: &str) -> usize {
-    let mut stones = parse(input).collect::<Vec<_>>();
-    for _ in 0..25 {
-        stones = blink(&stones);
-    }
-    stones.len()
-}
-
-fn blink(input: &[usize]) -> Vec<usize> {
-    let mut out = Vec::new();
-    for &n in input {
-        if n == 0 {
-            out.push(1);
-        } else {
-            let digits = n.ilog10() + 1;
-            if digits % 2 == 0 {
-                let mask = 10usize.pow(digits / 2);
-                out.push(n / mask);
-                out.push(n % mask);
-            } else {
-                out.push(n * 2024);
-            }
-        }
-    }
-    out
+    let mut cache = HashMap::<(usize, usize), usize>::with_capacity(1_000);
+    parse(input)
+        .map(|n| expand::<100_000>(n, 25, &mut cache))
+        .sum()
 }
 
 pub fn part2(input: &str) -> usize {
-    let mut cache = HashMap::<(usize, usize), usize>::new();
-    parse(input).map(|n| expand(n, 75, &mut cache)).sum()
+    let mut cache = HashMap::<(usize, usize), usize>::with_capacity(100_000);
+    parse(input)
+        .map(|n| expand::<100_000>(n, 75, &mut cache))
+        .sum()
 }
 
-fn expand(n: usize, it: usize, cache: &mut HashMap<(usize, usize), usize>) -> usize {
+pub fn expand<const C: usize>(
+    n: usize,
+    it: usize,
+    cache: &mut HashMap<(usize, usize), usize>,
+) -> usize {
     if it == 0 {
         return 1;
     }
@@ -46,17 +32,19 @@ fn expand(n: usize, it: usize, cache: &mut HashMap<(usize, usize), usize>) -> us
         return *r;
     }
     let r = if n == 0 {
-        expand(1, it - 1, cache)
+        expand::<C>(1, it - 1, cache)
     } else {
         let digits = n.ilog10() + 1;
         if digits % 2 == 0 {
             let mask = 10usize.pow(digits / 2);
-            expand(n / mask, it - 1, cache) + expand(n % mask, it - 1, cache)
+            expand::<C>(n / mask, it - 1, cache) + expand::<C>(n % mask, it - 1, cache)
         } else {
-            expand(n * 2024, it - 1, cache)
+            expand::<C>(n * 2024, it - 1, cache)
         }
     };
-    cache.insert((n, it), r);
+    if n < C {
+        cache.insert((n, it), r);
+    }
     return r;
 }
 
