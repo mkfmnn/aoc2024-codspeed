@@ -87,5 +87,17 @@ fn day10(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, day1, day2, day3, day4, day5, day6, day7, day8, day9, day10);
+fn day11(c: &mut Criterion) {
+    let input = include_str!("../data/input11.txt");
+    let mut group = c.benchmark_group("day11");
+    group.bench_function("day11 part1", |b| {
+        b.iter(|| day11::part1(black_box(&input)))
+    });
+    group.bench_function("day11 part2", |b| {
+        b.iter(|| day11::part2(black_box(&input)))
+    });
+    group.finish();
+}
+
+criterion_group!(benches, day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11);
 criterion_main!(benches);
