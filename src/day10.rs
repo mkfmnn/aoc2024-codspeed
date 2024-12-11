@@ -79,19 +79,25 @@ pub fn part2(input: &str) -> usize {
 }
 
 #[inline(always)]
-unsafe fn dosimd(map: &ArrayVec<u8x64, 64>, input: &ArrayVec<u8x64, 64>, output: &mut ArrayVec<u8x64, 64>, dim: usize, c: u8) {
+unsafe fn dosimd(
+    map: &ArrayVec<u8x64, 64>,
+    input: &ArrayVec<u8x64, 64>,
+    output: &mut ArrayVec<u8x64, 64>,
+    dim: usize,
+    c: u8,
+) {
     output.clear();
     for i in 0..dim {
         let mask = map[i].simd_eq(u8x64::splat(c));
         let mut out = mask.select(input[i].rotate_elements_left::<1>(), u8x64::splat(0));
         out += mask.select(input[i].rotate_elements_right::<1>(), u8x64::splat(0));
         if i > 0 {
-            out += mask.select(input[i-1], u8x64::splat(0));
+            out += mask.select(input[i - 1], u8x64::splat(0));
         }
         if i + 1 < dim {
-            out += mask.select(input[i+1], u8x64::splat(0));
+            out += mask.select(input[i + 1], u8x64::splat(0));
         }
-        output.push(out);
+        output.push_unchecked(out);
     }
 }
 
@@ -111,18 +117,12 @@ unsafe fn simd_inner(bytes: &[u8]) -> usize {
     let mut a = ArrayVec::<u8x64, 64>::new();
     let mut b = ArrayVec::<u8x64, 64>::new();
     for i in 0..dim {
-        let row = &map[i];
-        let eightmask = row.simd_eq(u8x64::splat(b'8'));
-        let mut out = (row.rotate_elements_left::<1>().simd_eq(u8x64::splat(b'9')) & eightmask).select(u8x64::splat(1), u8x64::splat(0));
-        out += (row.rotate_elements_right::<1>().simd_eq(u8x64::splat(b'9')) & eightmask).select(u8x64::splat(1), u8x64::splat(0));
-        if i > 0 {
-            out += (map[i-1].simd_eq(u8x64::splat(b'9')) & eightmask).select(u8x64::splat(1), u8x64::splat(0));
-        }
-        if i + 1 < dim {
-            out += (map[i+1].simd_eq(u8x64::splat(b'9')) & eightmask).select(u8x64::splat(1), u8x64::splat(0));
-        }
-        a.push(out);
+        let out = map[i]
+            .simd_eq(u8x64::splat(b'9'))
+            .select(u8x64::splat(1), u8x64::splat(0));
+        b.push_unchecked(out);
     }
+    dosimd(&map, &b, &mut a, dim, b'8');
     dosimd(&map, &a, &mut b, dim, b'7');
     dosimd(&map, &b, &mut a, dim, b'6');
     dosimd(&map, &a, &mut b, dim, b'5');
