@@ -1,61 +1,67 @@
 use std::collections::HashMap;
 
-const T: usize = 10_000_000;
+const L: usize = 10_000_000;
 
-static LUT1: [u16; T] = unsafe {
-    let mut t = [0u16; T];
+static LUT1: [u16; L] = unsafe {
+    let mut t = [0u16; L];
     let b = include_bytes!("../lut/d11p1.bin");
-    assert!(b.len() == T * 2);
+    assert!(b.len() == L * 2);
     std::ptr::copy(
         b.as_ptr(),
-        std::mem::transmute::<_, &mut [u8; T * 2]>(&mut t).as_mut_ptr(),
-        T * 2,
+        std::mem::transmute::<_, &mut [u8; L * 2]>(&mut t).as_mut_ptr(),
+        L * 2,
     );
     t
 };
 
-static LUT2: [usize; T] = unsafe {
-    let mut t = [0usize; T];
+static LUT2: [usize; L] = unsafe {
+    let mut t = [0usize; L];
     let b = include_bytes!("../lut/d11p2.bin");
-    assert!(b.len() == T * 8);
+    assert!(b.len() == L * 8);
     std::ptr::copy(
         b.as_ptr(),
-        std::mem::transmute::<_, &mut [u8; T * 8]>(&mut t).as_mut_ptr(),
-        T * 8,
+        std::mem::transmute::<_, &mut [u8; L * 8]>(&mut t).as_mut_ptr(),
+        L * 8,
     );
     t
 };
-
-pub fn parse(input: &str) -> impl Iterator<Item = usize> + use<'_> {
-    input
-        .split_ascii_whitespace()
-        .map(|s| s.parse::<usize>().unwrap())
-}
 
 pub fn part1(input: &str) -> usize {
-    let mut cache = HashMap::<(usize, usize), usize>::new();
-    parse(input)
-        .map(|n| {
-            if n < T {
-                LUT1[n] as usize
-            } else {
-                expand::<100_000>(n, 25, &mut cache)
-            }
-        })
-        .sum()
+    inner(input, |n| unsafe { *LUT1.get_unchecked(n) as usize }, 25)
 }
 
 pub fn part2(input: &str) -> usize {
+    inner(input, |n| unsafe { *LUT2.get_unchecked(n) }, 75)
+}
+
+fn inner<F>(input: &str, lut: F, it: usize) -> usize
+where
+    F: Fn(usize) -> usize,
+{
     let mut cache = HashMap::<(usize, usize), usize>::new();
-    parse(input)
-        .map(|n| {
-            if n < T {
-                LUT2[n] as usize
+    let input = input.as_bytes();
+
+    let mut i = 0;
+    let mut n = 0;
+    let mut r = 0;
+    loop {
+        let c = unsafe { *input.get_unchecked(i) };
+        if c == b' ' || c == b'\n' {
+            r += if n < L {
+                lut(n)
             } else {
-                expand::<100_000>(n, 75, &mut cache)
+                expand::<100_000>(n, it, &mut cache)
+            };
+            if c == b'\n' {
+                break r;
             }
-        })
-        .sum()
+            n = 0;
+        } else {
+            n *= 10;
+            n += (c - b'0') as usize;
+        }
+        i += 1;
+    }
 }
 
 pub fn expand<const C: usize>(
