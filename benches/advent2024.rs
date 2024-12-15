@@ -111,5 +111,7 @@ fn day12(c: &mut Criterion) {
     group.finish();
 }
 
-criterion_group!(benches, day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11, day12);
+criterion_group!(
+    benches, day1, day2, day3, day4, day5, day6, day7, day8, day9, day10, day11, day12
+);
 criterion_main!(benches);
