@@ -1,8 +1,7 @@
-use std::ops::Index;
+use std::{mem::swap, ops::Index};
 
 use arrayvec::ArrayVec;
 use bitvec::{bitarr, BitArr};
-use pathfinding::prelude::dijkstra;
 
 const DIM: usize = 71;
 const GOAL: (u8, u8) = ((DIM - 1) as u8, (DIM - 1) as u8);
@@ -24,44 +23,54 @@ impl Index<Pos> for Bitmap {
     }
 }
 
-fn successors(blocks: &Bitmap) -> impl FnMut(&Pos) -> Vec<(Pos, usize)> + use<'_> {
-    |n| {
-        let mut v = vec![];
-        for dir in [(0, 1), (-1, 0), (0, -1), (1, 0)] {
-            let next = (
-                n.0.wrapping_add_signed(dir.0),
-                n.1.wrapping_add_signed(dir.1),
-            );
-            if next.0 >= DIM as u8 || next.1 >= DIM as u8 {
-                continue;
-            }
-            if blocks[next] {
-                continue;
-            }
-            v.push((next, 1));
-        }
-        v
+fn neighbors(pos: Pos) -> ArrayVec<Pos, 4> {
+    let mut ret = ArrayVec::new();
+    if pos.0 != 0 {
+        ret.push((pos.0 - 1, pos.1));
     }
-}
-
-fn parse(line: &str) -> Pos {
-    let (a, b) = line.split_once(',').unwrap();
-    (a.parse().unwrap(), b.parse().unwrap())
+    if pos.1 != 0 {
+        ret.push((pos.0, pos.1 - 1));
+    }
+    if pos.0 + 1 != DIM as u8 {
+        ret.push((pos.0 + 1, pos.1));
+    }
+    if pos.1 + 1 != DIM as u8 {
+        ret.push((pos.0, pos.1 + 1));
+    }
+    ret
 }
 
 pub fn part1(input: &str) -> usize {
     let mut blocks = Bitmap(bitarr![0; DIM*DIM]);
-    for line in input.lines().take(1024) {
-        let pos = parse(line);
+    let mut visited = Bitmap(bitarr![0; DIM*DIM]);
+    for pos in parse_input(input).take(1024) {
         blocks.set(pos, true);
     }
-    dijkstra(&(0, 0), successors(&blocks), |&n| n == GOAL)
-        .unwrap()
-        .1
+    let mut frontier = Vec::with_capacity(DIM * 2);
+    let mut next_frontier = Vec::with_capacity(DIM * 2);
+    frontier.push((0, 0));
+    let mut i = 1;
+    loop {
+        debug_assert!(!frontier.is_empty());
+        for &pos in &frontier {
+            for n in neighbors(pos) {
+                if !visited[n] && !blocks[n] {
+                    if n == GOAL {
+                        return i;
+                    }
+                    visited.set(n, true);
+                    next_frontier.push(n);
+                }
+            }
+        }
+        i += 1;
+        frontier.clear();
+        swap(&mut frontier, &mut next_frontier);
+    }
 }
 
 pub fn part2(input: &str) -> String {
-    let blocks: ArrayVec<_, 4000> = input.lines().map(parse).collect();
+    let blocks: ArrayVec<_, 4000> = parse_input(input).collect();
     let mut bitmap = Bitmap(bitarr![0; DIM*DIM]);
     let mut visited = Bitmap(bitarr![0; DIM*DIM]);
     for &pos in &blocks {
@@ -107,6 +116,53 @@ fn visit(pos: Pos, visited: &mut Bitmap, bitmap: &Bitmap) {
     }
     if pos.1 + 1 != DIM as u8 {
         maybe_visit((pos.0, pos.1 + 1), visited, bitmap);
+    }
+}
+
+fn parse_input(input: &str) -> impl Iterator<Item = (u8, u8)> + use<'_> {
+    InputIter {
+        input: input.as_bytes(),
+    }
+}
+
+#[inline(always)]
+fn parse2(input: &[u8], offset: usize) -> u8 {
+    input[offset]
+        .wrapping_mul(10)
+        .wrapping_add(input[offset + 1])
+        .wrapping_sub(16)
+}
+
+struct InputIter<'a> {
+    input: &'a [u8],
+}
+impl Iterator for InputIter<'_> {
+    type Item = (u8, u8);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.input.is_empty() {
+            return None;
+        }
+        if self.input[3] == b'\n' {
+            let r = (self.input[0] - b'0', self.input[2] - b'0');
+            self.input = &self.input[4..];
+            Some(r)
+        } else if self.input[4] == b'\n' {
+            if self.input[1] == b',' {
+                let r = (self.input[0] - b'0', parse2(self.input, 2));
+                self.input = &self.input[5..];
+                Some(r)
+            } else {
+                let r = (parse2(self.input, 0), self.input[3] - b'0');
+                self.input = &self.input[5..];
+                Some(r)
+            }
+        } else {
+            debug_assert_eq!(self.input[5], b'\n');
+            let r = (parse2(self.input, 0), parse2(self.input, 3));
+            self.input = &self.input[6..];
+            Some(r)
+        }
     }
 }
 
