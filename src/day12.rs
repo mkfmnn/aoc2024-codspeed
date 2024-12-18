@@ -1,9 +1,9 @@
 use core::str;
 
-use bitvec::{array::BitArray, bitarr, BitArr};
-use enumset::{enum_set, EnumSet, EnumSetType};
+use bitvec::{bitarr, BitArr};
+use enumset::{EnumSet, EnumSetType};
 
-const DIM: usize = 10;
+const DIM: usize = 140;
 const LINE: usize = DIM + 1;
 const LEN: usize = DIM * LINE;
 type BitSet = BitArr!(for LEN);
@@ -21,12 +21,21 @@ impl Dir {
 
     fn add(&self, pos: usize) -> Option<usize> {
         let newpos = pos.wrapping_add(match *self {
-            Dir::W => -(LINE as isize) as usize,
-            Dir::N => -1isize as usize,
+            Dir::N => -(LINE as isize) as usize,
+            Dir::W => -1isize as usize,
             Dir::E => 1,
             Dir::S => LINE,
         });
         (newpos < LEN).then_some(newpos)
+    }
+
+    fn next(&self) -> Dir {
+        match *self {
+            Dir::W => Dir::N,
+            Dir::N => Dir::E,
+            Dir::E => Dir::S,
+            Dir::S => Dir::W,
+        }
     }
 }
 
@@ -52,11 +61,12 @@ fn fill(bytes: &[u8], visited: &mut BitSet, pos: usize, char: u8) -> (usize, usi
     let mut perimeter = 0;
     let mut area = 1;
     visited.set(pos, true);
-    for dir in [(-(LINE as isize)) as usize, (-1isize) as usize, 1, LINE] {
-        let newpos = pos.wrapping_add(dir);
-        if newpos >= LEN {
+    for dir in Dir::ALL {
+        let Some(newpos) = dir.add(pos) else {
             perimeter += 1;
-        } else if bytes[newpos] != char {
+            continue;
+        };
+        if bytes[newpos] != char {
             perimeter += 1;
         } else if !visited[newpos] {
             let r = fill(bytes, visited, newpos, char);
@@ -77,47 +87,37 @@ fn part2_inner(bytes: &[u8]) -> usize {
     let mut sum = 0;
     for pos in 0..bytes.len() {
         if !visited[pos] && pos % LINE != DIM {
-            let (area, perimiter) = fill2(bytes, &mut visited, pos, bytes[pos], enum_set!());
-            // println!("{}: {}, {}", str::from_utf8(&[bytes[pos]]).unwrap(), area, perimiter);
-            sum += area * perimiter;
+            let (area, corners) = fill2(bytes, &mut visited, pos, bytes[pos]);
+            //println!("{}: {}, {}", str::from_utf8(&[bytes[pos]]).unwrap(), area, corners);
+            sum += area * corners;
         }
     }
     sum
 }
 
-fn fill2(
-    bytes: &[u8],
-    visited: &mut BitSet,
-    pos: usize,
-    char: u8,
-    sides: EnumSet<Dir>,
-) -> (usize, usize) {
-    let mut perimeter = 0;
+fn fill2(bytes: &[u8], visited: &mut BitSet, pos: usize, char: u8) -> (usize, usize) {
+    let mut corners = 0;
     let mut area = 1;
     visited.set(pos, true);
-    let mut mysides = EnumSet::<Dir>::empty();
     for dir in Dir::ALL {
-        let newpos = dir.add(pos);
-        if newpos.is_none_or(|p| bytes[p] != char) {
-            mysides.insert(dir);
+        let s1 = dir.add(pos).is_some_and(|p| bytes[p] == char);
+        let s2 = dir.next().add(pos).is_some_and(|p| bytes[p] == char);
+        if !s1 && !s2 {
+            corners += 1;
+        }
+        let Some(newpos) = dir.add(pos) else {
             continue;
+        };
+        if s1 && s2 && bytes[dir.next().add(newpos).unwrap()] != char {
+            corners += 1;
+        }
+        if !visited[newpos] && bytes[newpos] == char {
+            let r = fill2(bytes, visited, newpos, char);
+            area += r.0;
+            corners += r.1;
         }
     }
-    for dir in Dir::ALL {
-        if mysides.contains(dir) {
-            if !sides.contains(dir) {
-                perimeter += 1;
-            }
-        } else {
-            let newpos = dir.add(pos).unwrap();
-            if !visited[newpos] {
-                let r = fill2(bytes, visited, newpos, char, mysides);
-                area += r.0;
-                perimeter += r.1;
-            }
-        }
-    }
-    (area, perimeter)
+    (area, corners)
 }
 
 #[cfg(test)]
@@ -127,11 +127,11 @@ mod tests {
 
     #[test]
     fn test_part1() {
-        assert_eq!(0, part1(INPUT));
+        assert_eq!(1464678, part1(INPUT));
     }
 
     #[test]
     fn test_part2() {
-        assert_eq!(0, part2(INPUT));
+        assert_eq!(877492, part2(INPUT));
     }
 }
