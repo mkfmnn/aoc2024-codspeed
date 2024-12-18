@@ -157,28 +157,46 @@ impl Iterator for InputIter<'_> {
     type Item = (u8, u8);
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.input.is_empty() {
-            return None;
-        }
-        if self.input[3] == b'\n' {
-            let r = (self.input[0] - b'0', self.input[2] - b'0');
-            self.input = &self.input[4..];
-            Some(r)
-        } else if self.input[4] == b'\n' {
-            if self.input[1] == b',' {
-                let r = (self.input[0] - b'0', parse2(self.input, 2));
-                self.input = &self.input[5..];
+        if self.input.len() >= 8 {
+            if self.input[5] == b'\n' {
+                let r = (parse2(self.input, 0), parse2(self.input, 3));
+                self.input = &self.input[6..];
                 Some(r)
+            } else if self.input[4] == b'\n' {
+                if self.input[1] == b',' {
+                    let r = (self.input[0] - b'0', parse2(self.input, 2));
+                    self.input = &self.input[5..];
+                    Some(r)
+                } else {
+                    let r = (parse2(self.input, 0), self.input[3] - b'0');
+                    self.input = &self.input[5..];
+                    Some(r)
+                }
             } else {
-                let r = (parse2(self.input, 0), self.input[3] - b'0');
-                self.input = &self.input[5..];
+                debug_assert_eq!(self.input[3], b'\n');
+                let r = (self.input[0] - b'0', self.input[2] - b'0');
+                self.input = &self.input[4..];
                 Some(r)
             }
         } else {
-            debug_assert_eq!(self.input[5], b'\n');
-            let r = (parse2(self.input, 0), parse2(self.input, 3));
-            self.input = &self.input[6..];
-            Some(r)
+            if self.input.is_empty() {
+                None
+            } else {
+                let mut a = 0;
+                let mut b = 0;
+                let mut i = 0;
+                while self.input[i] != b',' {
+                    a = a * 10 + (self.input[i] - b'0');
+                    i += 1;
+                }
+                i += 1;
+                while self.input[i] != b'\n' {
+                    b = b * 10 + (self.input[i] - b'0');
+                    i += 1;
+                }
+                self.input = &self.input[i+1..];
+                Some((a, b))
+            }
         }
     }
 }
