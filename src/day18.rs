@@ -23,23 +23,6 @@ impl Index<Pos> for Bitmap {
     }
 }
 
-fn neighbors(pos: Pos) -> ArrayVec<Pos, 4> {
-    let mut ret = ArrayVec::new();
-    if pos.0 != 0 {
-        ret.push((pos.0 - 1, pos.1));
-    }
-    if pos.1 != 0 {
-        ret.push((pos.0, pos.1 - 1));
-    }
-    if pos.0 + 1 != DIM as u8 {
-        ret.push((pos.0 + 1, pos.1));
-    }
-    if pos.1 + 1 != DIM as u8 {
-        ret.push((pos.0, pos.1 + 1));
-    }
-    ret
-}
-
 pub fn part1(input: &str) -> usize {
     let mut blocks = Bitmap(bitarr![0; DIM*DIM]);
     let mut visited = Bitmap(bitarr![0; DIM*DIM]);
@@ -53,19 +36,53 @@ pub fn part1(input: &str) -> usize {
     loop {
         debug_assert!(!frontier.is_empty());
         for &pos in &frontier {
-            for n in neighbors(pos) {
-                if !visited[n] && !blocks[n] {
-                    if n == GOAL {
-                        return i;
-                    }
-                    visited.set(n, true);
-                    next_frontier.push(n);
-                }
+            if pos.0 != 0 {
+                visit1(
+                    (pos.0 - 1, pos.1),
+                    &blocks,
+                    &mut visited,
+                    &mut next_frontier,
+                );
             }
+            if pos.1 != 0 {
+                visit1(
+                    (pos.0, pos.1 - 1),
+                    &blocks,
+                    &mut visited,
+                    &mut next_frontier,
+                );
+            }
+            if pos.0 + 1 != DIM as u8 {
+                visit1(
+                    (pos.0 + 1, pos.1),
+                    &blocks,
+                    &mut visited,
+                    &mut next_frontier,
+                );
+            }
+            if pos.1 + 1 != DIM as u8 {
+                visit1(
+                    (pos.0, pos.1 + 1),
+                    &blocks,
+                    &mut visited,
+                    &mut next_frontier,
+                );
+            }
+        }
+        if visited[GOAL] {
+            return i;
         }
         i += 1;
         frontier.clear();
         swap(&mut frontier, &mut next_frontier);
+    }
+}
+
+#[inline(always)]
+fn visit1(n: (u8, u8), blocks: &Bitmap, visited: &mut Bitmap, next_frontier: &mut Vec<(u8, u8)>) {
+    if !visited[n] && !blocks[n] {
+        visited.set(n, true);
+        next_frontier.push(n);
     }
 }
 
