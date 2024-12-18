@@ -159,9 +159,12 @@ impl Iterator for InputIter<'_> {
     fn next(&mut self) -> Option<Self::Item> {
         if self.input.len() >= 8 {
             if self.input[5] == b'\n' {
-                let r = (parse2(self.input, 0), parse2(self.input, 3));
+                let n = (u64::from_le_bytes(self.input[0..8].try_into().unwrap()) & 0xffff00ffff)
+                    - 0x3030003030;
+                let n = (n * 10) + (n >> 8);
+                let n = n.to_le_bytes();
                 self.input = &self.input[6..];
-                Some(r)
+                Some((n[0], n[3]))
             } else if self.input[4] == b'\n' {
                 if self.input[1] == b',' {
                     let r = (self.input[0] - b'0', parse2(self.input, 2));
@@ -194,7 +197,7 @@ impl Iterator for InputIter<'_> {
                     b = b * 10 + (self.input[i] - b'0');
                     i += 1;
                 }
-                self.input = &self.input[i+1..];
+                self.input = &self.input[i + 1..];
                 Some((a, b))
             }
         }
