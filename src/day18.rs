@@ -161,7 +161,7 @@ impl Iterator for InputIter<'_> {
             if self.input[5] == b'\n' {
                 let n = (u64::from_le_bytes(self.input[0..8].try_into().unwrap()) & 0xffff00ffff)
                     - 0x3030003030;
-                let n = (n * 10) + (n >> 8);
+                let n = (n * 2561) >> 8;
                 let n = n.to_le_bytes();
                 self.input = &self.input[6..];
                 Some((n[0], n[3]))
